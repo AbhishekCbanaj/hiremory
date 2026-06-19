@@ -1,0 +1,23 @@
+# ---- secrets (NEVER commit) ----
+engine/credentials.json
+engine/token.json
+**/.env.local
+**/.env
+
+# ---- python ----
+.venv/
+**/__pycache__/
+*.pyc
+
+# ---- engine runtime data ----
+engine/data/
+engine/uploads/
+engine/resumes/
+
+# ---- node / next ----
+web/node_modules/
+web/.next/
+web/out/
+
+# ---- os ----
+.DS_Store

@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Hanken Grotesk", system-ui, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: #0B1020;
+  color: #E8ECF5;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* layered glow + faint starfield grain on the midnight canvas */
+  background-image:
+    radial-gradient(900px 500px at 78% -8%, rgba(110, 231, 240, 0.10), transparent 60%),
+    radial-gradient(700px 500px at 8% 8%, rgba(124, 92, 255, 0.08), transparent 55%),
+    radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: auto, auto, 4px 4px;
+  background-attachment: fixed, fixed, scroll;
+}
+
+@layer base {
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    line-height: 1.04;
+  }
+}
+
+@layer components {
+  .container-x { @apply mx-auto w-full max-w-6xl px-6; }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3
+           text-[15px] font-semibold transition-all duration-200;
+  }
+  .btn-primary {
+    @apply btn text-[#06141A];
+    background: linear-gradient(180deg, #7DECF5, #4FD6E1);
+    box-shadow: 0 0 0 1px rgba(110, 231, 240, 0.3), 0 8px 28px rgba(110, 231, 240, 0.30);
+  }
+  .btn-primary:hover { @apply -translate-y-px; filter: brightness(1.05); }
+  .btn-ghost {
+    @apply btn border border-line text-ink;
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .btn-ghost:hover { @apply -translate-y-px; border-color: rgba(110, 231, 240, 0.45); }
+
+  /* frosted glass card — the core surface of the midnight theme */
+  .card, .surface {
+    @apply rounded-xl2 p-7;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 1px 1px rgba(0,0,0,0.4), 0 18px 44px rgba(0,0,0,0.40);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  .surface { @apply p-0; }
+  .card:hover, .lift:hover {
+    transform: translateY(-3px);
+    border-color: rgba(110, 231, 240, 0.30);
+    box-shadow: 0 1px 1px rgba(0,0,0,0.4), 0 26px 60px rgba(0,0,0,0.5);
+  }
+
+  .eyebrow { @apply text-[12px] font-semibold uppercase tracking-[0.18em] text-clay; }
+  .tag {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-[13px] text-ink2;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+  }
+}
+
+.link-grow {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1.5px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.3s ease;
+}
+.link-grow:hover { background-size: 100% 1.5px; }
+
+/* native form controls inherit the dark theme */
+input, textarea { color: #E8ECF5; }
+input::placeholder, textarea::placeholder { color: #5E6B86; }
