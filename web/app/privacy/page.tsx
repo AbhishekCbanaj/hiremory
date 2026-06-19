@@ -1,4 +1,4 @@
-export const metadata = { title: "Privacy — ApplyLoop" };
+export const metadata = { title: "Privacy — Hiremory" };
 
 export default function Privacy() {
   return (
@@ -7,7 +7,7 @@ export default function Privacy() {
       <h1 className="mt-3 text-4xl md:text-5xl">Privacy &amp; your data</h1>
       <div className="mt-8 max-w-2xl space-y-6 text-ink2 [&_h2]:text-ink [&_h2]:text-xl [&_h2]:font-display">
         <p>
-          ApplyLoop sends job-application emails from <em>your own</em> mailbox to recruiters you
+          Hiremory sends job-application emails from <em>your own</em> mailbox to recruiters you
           choose. We act as a tool you control. Here&apos;s exactly what that means for data.
         </p>
 

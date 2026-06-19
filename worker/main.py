@@ -1,5 +1,5 @@
 """
-ApplyLoop background worker.
+Hiremory background worker.
 
 For every connected sender (Gmail OAuth OR provider-agnostic SMTP/IMAP), this:
   1. SEND      — emails contacts not yet contacted (daily cap + spacing), logging
@@ -47,7 +47,8 @@ import followups             # noqa: E402  (reply classification)
 
 import supa                  # noqa: E402
 import templates as tpl      # noqa: E402
-import ai                    # noqa: E402  (optional Claude personalization; no-op without API key)
+import ai                    # noqa: E402  (optional Claude/Gemini personalization; no-op without key)
+import resume_pdf            # noqa: E402  (renders a tailored resume to PDF)
 from transports import SmtpTransport, GmailTransport, PermanentSendError, MailboxAuthError  # noqa: E402
 from links import unsub_url  # noqa: E402
 
@@ -117,29 +118,42 @@ def _eligible_contacts(uid: str, profile: dict, daily_cap: int) -> list[dict]:
 
 
 def phase_send(tx, uid: str, profile: dict, mailbox_id, daily_cap: int) -> None:
+    # per-campaign AI instructions the user tuned in the preview panel.
+    # Tolerate the column not existing yet (migration 0010 not applied) — send
+    # without per-campaign tuning rather than failing the whole run.
+    try:
+        instr_map = {x["id"]: x.get("instructions") for x in
+                     supa.select("campaigns", {"user_id": f"eq.{uid}", "select": "id,instructions"})}
+    except Exception:
+        instr_map = {}
     fails = 0
     for c in _eligible_contacts(uid, profile, daily_cap):
         if _sends_this_run >= MAX_SENDS:
             log("  MAX_SENDS_PER_RUN hit; stopping sends")
             return
-        status = _send_one(tx, uid, profile, c, mailbox_id)
+        status = _send_one(tx, uid, profile, c, mailbox_id, instr_map.get(c.get("campaign_id")))
         if status == "auth_fail":
             return  # mailbox already paused
         if status == "failed":
             fails += 1
-            if mailbox_id and fails >= PAUSE_AFTER_FAILS:
-                supa.update("mailboxes", {"id": mailbox_id},
-                            {"status": "paused", "last_error": "repeated send failures"})
-                log(f"  paused mailbox after {fails} consecutive failures")
+            # Circuit-breaker: stop after repeated failures. Works for Gmail
+            # senders too (mailbox_id is None) — we just can't mark a row paused.
+            if fails >= PAUSE_AFTER_FAILS:
+                if mailbox_id:
+                    supa.update("mailboxes", {"id": mailbox_id},
+                                {"status": "paused", "last_error": "repeated send failures"})
+                    log(f"  paused mailbox after {fails} consecutive failures")
+                else:
+                    log(f"  stopping sends after {fails} consecutive failures")
                 return
         elif status == "sent":
             fails = 0
             time.sleep(SPACING)
 
 
-def _compose(profile: dict, c: dict, url: str) -> tuple[str, str, str]:
+def _compose(profile: dict, c: dict, url: str, instructions=None) -> tuple[str, str, str]:
     """Build (subject, plain, html). Uses Claude when available, else templates."""
-    ai_email = ai.personalize(profile, c)  # None unless ANTHROPIC_API_KEY set / on error
+    ai_email = ai.personalize(profile, c, instructions)  # None unless ANTHROPIC_API_KEY set / on error
     if ai_email:
         plain, html = tpl.assemble_ai(ai_email["body"], url)
         return ai_email["subject"], plain, html
@@ -150,12 +164,12 @@ def _compose(profile: dict, c: dict, url: str) -> tuple[str, str, str]:
             tpl.build_email_html(profile, greeting, company, unsub_url=url))
 
 
-def _send_one(tx, uid: str, profile: dict, c: dict, mailbox_id) -> str:
+def _send_one(tx, uid: str, profile: dict, c: dict, mailbox_id, instructions=None) -> str:
     """Send to one contact. Returns 'sent'|'dry'|'failed'|'permanent'|'auth_fail'."""
     global _sends_this_run
     company = c.get("company") or ""
     url = unsub_url(uid, c["email"])
-    subject, body, body_html = _compose(profile, c, url)
+    subject, body, body_html = _compose(profile, c, url, instructions)
     headers = {"List-Unsubscribe": f"<{url}>",
                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}
 
@@ -221,9 +235,26 @@ def _set_status(r: dict, status: str) -> None:
     supa.update("send_log", {"id": r["id"]}, {"status": status, "last_action_at": _now()})
 
 
-def _handle_positive(tx, uid, profile, r, confident: bool, resume_file):
+def _tailored_resume(profile: dict, jd: str) -> str | None:
+    """Tailor the user's resume_text to the JD and render a PDF; return temp path."""
+    data = ai.tailor_resume(profile.get("resume_text") or "", jd)
+    if not data:
+        return None
+    contact = " · ".join(x for x in [profile.get("email"), profile.get("phone"),
+                          profile.get("linkedin_url"), profile.get("github_url")] if x)
+    try:
+        return resume_pdf.render(profile.get("full_name") or "Resume", contact,
+                                 data.get("summary", ""), data.get("sections", []))
+    except Exception as e:
+        log(f"  tailored-resume render failed: {e}")
+        return None
+
+
+def _handle_positive(tx, uid, profile, r, confident: bool, resume_file, jd=None):
     """Auto-send the resume only on a high-confidence (AI-confirmed) positive and
-    when auto-send is enabled; otherwise flag 'positive' for the user to approve."""
+    when auto-send is enabled; otherwise flag 'positive' for the user to approve.
+    If the campaign has a job description + the user has resume_text + AI, attach a
+    TAILORED resume PDF instead of the generic one."""
     autosend = RESUME_AUTOSEND and confident
     if DRY_RUN:
         log(f"  DRY positive from {r['email']} -> {'send resume' if autosend else 'flag for review'}")
@@ -232,18 +263,25 @@ def _handle_positive(tx, uid, profile, r, confident: bool, resume_file):
         _set_status(r, "positive")  # pending the user's OK
         log(f"  positive (needs your OK before resume) -> {r['email']}")
         return resume_file
-    if resume_file is None:
+
+    tailored = _tailored_resume(profile, jd) if (jd and (profile.get("resume_text") or "").strip()) else None
+    if not tailored and resume_file is None:
         resume_file = _default_resume_file(uid)
-    if not resume_file:  # don't send a "resume attached" email with no resume
+    attach = tailored or resume_file
+    if not attach:  # don't send a "resume attached" email with no resume
         _set_status(r, "positive")
-        log(f"  positive but no resume uploaded — flagged for you -> {r['email']}")
+        log(f"  positive but no resume available — flagged for you -> {r['email']}")
         return resume_file
+
     greeting = (r.get("email") or "there").split("@")[0]
     plain, html = tpl.build_resume_cover(profile, greeting)
-    tx.reply(r["email"], r.get("subject") or "", plain, html=html, row=r, attachment_path=resume_file)
+    tx.reply(r["email"], r.get("subject") or "", plain, html=html, row=r, attachment_path=attach)
     supa.update("send_log", {"id": r["id"]},
-                {"status": "resume_sent", "resume_path": "default", "last_action_at": _now()})
-    log(f"  positive -> resume sent to {r['email']}")
+                {"status": "resume_sent", "resume_path": "tailored" if tailored else "default",
+                 "last_action_at": _now()})
+    log(f"  positive -> {'tailored ' if tailored else ''}resume sent to {r['email']}")
+    if tailored and os.path.exists(tailored):
+        os.remove(tailored)
     return resume_file
 
 
@@ -251,6 +289,12 @@ def phase_replies(tx, uid: str, profile: dict) -> None:
     # Only NEW replies: scan 'sent' rows. Once classified they move to a terminal
     # status, so we never re-fetch or re-classify them on later runs.
     rows = supa.select("send_log", {"user_id": f"eq.{uid}", "status": "eq.sent", "select": "*"})
+    # per-campaign job descriptions for resume tailoring (tolerate column not yet migrated)
+    try:
+        jd_map = {x["id"]: x.get("job_description") for x in
+                  supa.select("campaigns", {"user_id": f"eq.{uid}", "select": "id,job_description"})}
+    except Exception:
+        jd_map = {}
     resume_file = None
     for r in rows:
         inbound = tx.find_reply(r)
@@ -262,7 +306,8 @@ def phase_replies(tx, uid: str, profile: dict) -> None:
         STATS["replies"] += 1
 
         if verdict == "positive":
-            resume_file = _handle_positive(tx, uid, profile, r, ai_verdict == "positive", resume_file)
+            jd = jd_map.get(r.get("campaign_id"))
+            resume_file = _handle_positive(tx, uid, profile, r, ai_verdict == "positive", resume_file, jd)
         elif verdict == "negative":
             _set_status(r, "not_now")
             log(f"  negative -> marked not_now: {r['email']}")
@@ -397,19 +442,39 @@ def _smtp_senders() -> list[tuple]:
 
 
 def _warmup_cap(created_at, hard_cap: int) -> int:
-    """Ramp a fresh mailbox: WARMUP_START on day 0, +WARMUP_STEP/day, capped."""
-    days = _days_since(created_at, dt.datetime.now()) if created_at else 999
+    """Ramp a fresh mailbox: WARMUP_START on day 0, +WARMUP_STEP/day, capped.
+    A missing created_at is treated as a brand-new mailbox (day 0) — the safe,
+    spam-protecting default. (Previously defaulted to 999 days, which skipped
+    warmup entirely and sent at full cap immediately.)"""
+    days = _days_since(created_at, dt.datetime.now()) if created_at else 0
     allowed = WARMUP_START + WARMUP_STEP * int(days)
     return max(1, min(hard_cap, allowed))
 
 
+def _lease_cutoff() -> str:
+    """Running rows older than this are considered dead (so a crashed run can't
+    block the lease forever)."""
+    return (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=LEASE_STALE_MIN)).isoformat()
+
+
 def _acquire_lease() -> bool:
-    """Single-flight: refuse to start if a fresh 'running' row exists, so two
-    overlapping runs never double-send. Stale running rows are ignored."""
-    cutoff = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=LEASE_STALE_MIN)).isoformat()
+    """Single-flight pre-check: refuse to start if a fresh 'running' row exists.
+    Stale running rows are ignored. This narrows but doesn't fully close the race
+    (SELECT-then-INSERT) — _confirm_lease() does the deterministic tie-break."""
     active = supa.select("worker_runs",
-                        {"status": "eq.running", "started_at": f"gte.{cutoff}", "select": "id"})
+                        {"status": "eq.running", "started_at": f"gte.{_lease_cutoff()}", "select": "id"})
     return not active
+
+
+def _confirm_lease(run_id) -> bool:
+    """After inserting our 'running' row, make sure WE hold the lease. If two runs
+    raced past _acquire_lease and both inserted, the one with the earliest
+    (started_at, id) wins; the rest stand down. Deterministic, so exactly one
+    proceeds — without a migration or a unique index that would break stale recovery."""
+    fresh = supa.select("worker_runs",
+                        {"status": "eq.running", "started_at": f"gte.{_lease_cutoff()}",
+                         "order": "started_at.asc,id.asc", "select": "id"})
+    return bool(fresh) and fresh[0]["id"] == run_id
 
 
 def main() -> None:
@@ -422,6 +487,11 @@ def main() -> None:
     run = None
     if not DRY_RUN:
         run = supa.insert("worker_runs", {"status": "running", "host": os.uname().nodename})
+        if run and run.get("id") and not _confirm_lease(run["id"]):
+            supa.update("worker_runs", {"id": run["id"]},
+                        {"status": "aborted", "finished_at": _now()})
+            log("lost lease race to an earlier run; exiting")
+            return
 
     try:
         senders = _gmail_senders() + _smtp_senders()

@@ -18,7 +18,7 @@ export default function Replies() {
       <p className="eyebrow">Replies & auto-resume</p>
       <h1 className="mt-3 text-4xl md:text-5xl">It reads the room, then acts</h1>
       <p className="mt-4 max-w-2xl text-ink2">
-        ApplyLoop scans your threads for replies and sorts them. When a recruiter
+        Hiremory scans your threads for replies and sorts them. When a recruiter
         asks for your resume, it sends the role-matched PDF back automatically,
         in the same conversation. You only step in for the gray areas.
       </p>

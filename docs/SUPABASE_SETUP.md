@@ -4,7 +4,7 @@ Everything below is on Supabase's free plan. Do these once.
 
 ## 1. Create the project
 1. Go to https://supabase.com → sign in with GitHub → **New project**.
-2. Name it `applyloop`, pick a region near you, set a DB password (save it).
+2. Name it `hiremory`, pick a region near you, set a DB password (save it).
 3. Wait ~2 min for it to provision.
 
 ## 2. Run the database schema

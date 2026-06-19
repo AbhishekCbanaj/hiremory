@@ -1,18 +1,21 @@
 import type { Config } from "tailwindcss";
 
+// "Momentum" — clean light theme, emerald brand (growth / get-hired), amber spark.
+// Token names kept (paper / ink / clay / sage / line) so every page re-skins.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        paper: "#0B1020",     // near-black navy canvas
-        paper2: "#141D33",    // raised panel / input surface
-        ink: "#E8ECF5",       // soft white text
-        ink2: "#93A1BF",      // muted text
-        clay: "#6EE7F0",      // cyan accent (keeps the `clay` token name)
-        clayDark: "#3FD3DE",
-        sage: "#7CE7B0",      // positive / success mint
-        line: "#26314B",      // subtle border
+        paper: "#FFFFFF",     // canvas
+        paper2: "#F3F7F4",    // raised panel / input fill (faint green-gray)
+        ink: "#111813",       // near-black, green undertone
+        ink2: "#5B6B62",      // muted text
+        clay: "#047857",      // emerald-700 — accent (text, buttons, eyebrow). AA on white.
+        clayDark: "#065F46",  // hover
+        sage: "#059669",      // brighter emerald — success / positive ticks
+        amber: "#D97706",     // warm secondary spark
+        line: "#E4E9E6",      // hairline borders
       },
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "serif"],
@@ -20,9 +23,9 @@ const config: Config = {
       },
       borderRadius: { xl2: "1.25rem" },
       boxShadow: {
-        soft: "0 1px 1px rgba(0,0,0,0.4), 0 10px 30px rgba(0,0,0,0.35)",
-        lift: "0 2px 4px rgba(0,0,0,0.4), 0 24px 60px rgba(0,0,0,0.5)",
-        glow: "0 0 0 1px rgba(110,231,240,0.25), 0 8px 30px rgba(110,231,240,0.35)",
+        soft: "0 1px 2px rgba(17,24,19,0.05), 0 6px 20px rgba(17,24,19,0.06)",
+        lift: "0 2px 4px rgba(17,24,19,0.06), 0 20px 44px rgba(17,24,19,0.10)",
+        glow: "0 0 0 1px rgba(4,120,87,0.18), 0 8px 24px rgba(4,120,87,0.22)",
       },
       keyframes: {
         rise: {
@@ -36,7 +39,7 @@ const config: Config = {
       },
       animation: {
         rise: "rise 0.7s cubic-bezier(0.16,1,0.3,1) both",
-        floaty: "floaty 6s ease-in-out infinite",
+        floaty: "floaty 7s ease-in-out infinite",
       },
     },
   },

@@ -13,6 +13,7 @@ Tracking:
 """
 import base64
 import os
+import re
 import mimetypes
 from email.message import EmailMessage
 
@@ -165,6 +166,8 @@ def check_bounces(service, addresses, lookback="newer_than:60d"):
         ).execute()
         blob = str(full).lower()
         for a in addr_set:
-            if a in blob:
+            # whole-address match, not substring — so 'hr@acme.co' isn't matched
+            # inside 'hr@acme.com' (which would suppress a valid, different contact)
+            if re.search(r"(?<![\w.+%-])" + re.escape(a) + r"(?![\w.\-])", blob):
                 bounced.add(a)
     return bounced

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & discussion
+    url: https://github.com/REPLACE_WITH_OWNER/hiremory/discussions
+    about: Ask questions, share ideas, and talk with the community here.
+  - name: 🔒 Report a security issue
+    url: https://github.com/REPLACE_WITH_OWNER/hiremory/security/advisories/new
+    about: Please report vulnerabilities privately — not as a public issue.

@@ -25,7 +25,7 @@ export function encryptSecret(plain: string): string {
 
 export function decryptSecret(blob: string): string {
   const [v, ivB, ctB, tagB] = blob.split(".");
-  if (v !== "v1") throw new Error("unknown secret format");
+  if (v !== "v1" || !ivB || !ctB || !tagB) throw new Error("unknown secret format");
   const decipher = crypto.createDecipheriv("aes-256-gcm", key(), Buffer.from(ivB, "base64"));
   decipher.setAuthTag(Buffer.from(tagB, "base64"));
   return Buffer.concat([decipher.update(Buffer.from(ctB, "base64")), decipher.final()]).toString("utf8");

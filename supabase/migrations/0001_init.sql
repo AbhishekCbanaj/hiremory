@@ -1,4 +1,4 @@
--- ApplyLoop initial schema
+-- Hiremory initial schema
 -- Run in Supabase SQL editor (or via `supabase db push`).
 -- Security: RLS on every table; users only ever see their own rows;
 -- Gmail tokens are locked to the service role (the worker), never the browser.

@@ -12,7 +12,13 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? (type === "recovery" ? "/reset-password" : "/dashboard");
+  // SECURITY: only allow same-origin relative paths as the post-auth redirect.
+  // A "//evil.com" or "https://evil.com" `next` would otherwise bounce a freshly
+  // authenticated user to an attacker's domain (open redirect).
+  const rawNext = searchParams.get("next");
+  const fallback = type === "recovery" ? "/reset-password" : "/dashboard";
+  const isSafe = !!rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//");
+  const next = isSafe ? rawNext : fallback;
   const supabase = await createClient();
 
   if (code) {

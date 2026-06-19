@@ -4,7 +4,7 @@ export default function Followups() {
       <p className="eyebrow">Follow-ups</p>
       <h1 className="mt-3 text-4xl md:text-5xl">The second touch that gets the reply</h1>
       <p className="mt-4 max-w-xl text-ink2">
-        ApplyLoop watches for silence. Six days after a first email with no reply
+        Hiremory watches for silence. Six days after a first email with no reply
         or bounce, it queues a short, polite nudge inside the same thread.
       </p>
 

@@ -15,7 +15,7 @@ const PRESETS: Record<string, Preset> = {
     link: "https://myaccount.google.com/apppasswords",
     steps: [
       "Turn on 2-Step Verification (Google Account → Security) — app passwords need it.",
-      "Open the App Passwords page (button below) and create one named “ApplyLoop”.",
+      "Open the App Passwords page (button below) and create one named “Hiremory”.",
       "Copy the 16-character password and paste it in App password. Not your normal password.",
     ],
   },

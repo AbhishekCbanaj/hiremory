@@ -27,7 +27,7 @@ export default function Login() {
     <main className="container-x grid min-h-[80vh] place-items-center">
       <form onSubmit={signIn} className="card w-full max-w-md">
         <h1 className="text-3xl">Welcome back</h1>
-        <p className="mt-2 text-ink2">Log in to your ApplyLoop account.</p>
+        <p className="mt-2 text-ink2">Log in to your Hiremory account.</p>
 
         <label htmlFor="email" className="mt-6 block text-[13px] text-ink2">Email</label>
         <input id="email" type="email" required autoComplete="email" value={email}

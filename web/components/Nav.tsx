@@ -44,7 +44,7 @@ export function Nav() {
       <div className="container-x flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-clay text-paper font-display text-lg">a</span>
-          <span className="font-display text-xl tracking-tight">ApplyLoop</span>
+          <span className="font-display text-xl tracking-tight">Hiremory</span>
         </Link>
 
         {/* desktop nav */}

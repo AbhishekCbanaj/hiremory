@@ -4,3 +4,4 @@ requests>=2.31
 cryptography>=42.0
 sentry-sdk>=2.0
 anthropic>=0.40
+fpdf2>=2.7

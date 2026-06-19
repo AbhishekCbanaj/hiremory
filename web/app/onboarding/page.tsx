@@ -14,12 +14,14 @@ type Profile = {
   intro_line: string;
   availability: string;
   pitch_text: string; // one bullet per line in the UI; stored as text[]
+  ai_notes: string;   // free-form memory the AI uses to personalize
+  resume_text: string; // base resume as text, for JD tailoring
 };
 
 const EMPTY: Profile = {
   full_name: "", phone: "", linkedin_url: "", github_url: "", location: "",
   headline: "", intro_line: "", availability: "available to join immediately",
-  pitch_text: "",
+  pitch_text: "", ai_notes: "", resume_text: "",
 };
 
 export default function Onboarding() {
@@ -46,6 +48,8 @@ export default function Onboarding() {
         intro_line: row?.intro_line ?? "",
         availability: row?.availability ?? "available to join immediately",
         pitch_text: (row?.pitch_points ?? []).join("\n"),
+        ai_notes: row?.ai_notes ?? "",
+        resume_text: row?.resume_text ?? "",
       });
     });
   }, [supabase, router]);
@@ -71,6 +75,8 @@ export default function Onboarding() {
       intro_line: p.intro_line.trim() || null,
       availability: p.availability.trim() || "available to join immediately",
       pitch_points: pitchPoints,
+      ai_notes: p.ai_notes.trim() || null,
+      resume_text: p.resume_text.trim() || null,
       onboarded: true,
     }).eq("id", uid);
     setBusy(false);
@@ -118,6 +124,20 @@ export default function Onboarding() {
           </Field>
           <div className="text-[13px] text-ink2">{pitchPoints.length} bullet{pitchPoints.length === 1 ? "" : "s"}</div>
         </div>
+      </div>
+
+      <div className="card mt-7">
+        <h2 className="text-2xl">Memory <span className="text-[13px] font-normal text-ink2">(optional)</span></h2>
+        <p className="mt-1 text-ink2">Anything you want the AI to remember and weave into your emails — context, preferences, things that make you you. The more you add, the more personal each email gets.</p>
+        <textarea rows={5} className={`${input} mt-4 resize-y`} value={p.ai_notes} onChange={(e) => set("ai_notes", e.target.value)}
+          placeholder={"e.g. I'm relocating to Bangalore in March. I care about mission-driven teams. I shipped a feature used by 2M users at my last job. Prefer a warm, direct tone — no corporate fluff."} />
+      </div>
+
+      <div className="card mt-7">
+        <h2 className="text-2xl">Your resume <span className="text-[13px] font-normal text-ink2">(optional — paste as text)</span></h2>
+        <p className="mt-1 text-ink2">Paste your full resume here. When you add a job description to a campaign, the AI tailors this to match it and attaches a PDF when a recruiter says yes.</p>
+        <textarea rows={8} className={`${input} mt-4 resize-y`} value={p.resume_text} onChange={(e) => set("resume_text", e.target.value)}
+          placeholder={"Paste your resume — experience, education, skills, projects. Plain text is fine."} />
       </div>
 
       <div className="mt-8 flex flex-wrap items-center gap-4">

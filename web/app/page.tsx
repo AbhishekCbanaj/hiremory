@@ -6,15 +6,15 @@ export default function Landing() {
     <main className="overflow-clip">
       {/* ---------------------------------------------------------------- HERO */}
       <section className="container-x relative pt-20 pb-24 md:pt-28 md:pb-32">
-        <div className="absolute right-[-8rem] top-10 -z-10 h-[28rem] w-[28rem] rounded-full bg-clay/15 blur-3xl animate-floaty" />
-        <div className="absolute left-[-10rem] top-40 -z-10 h-[24rem] w-[24rem] rounded-full bg-[#7C5CFF]/12 blur-3xl animate-floaty" style={{ animationDelay: "1.5s" }} />
+        <div className="absolute right-[-8rem] top-10 -z-10 h-[28rem] w-[28rem] rounded-full bg-clay/10 blur-3xl animate-floaty" />
+        <div className="absolute left-[-10rem] top-40 -z-10 h-[24rem] w-[24rem] rounded-full bg-amber/10 blur-3xl animate-floaty" style={{ animationDelay: "1.5s" }} />
         <p className="eyebrow animate-rise">For job seekers who hate the spray-and-pray</p>
         <h1 className="mt-5 max-w-4xl text-5xl leading-[1.03] animate-rise md:text-7xl" style={{ animationDelay: "60ms" }}>
           Reach every recruiter with a
           <span className="italic text-clay"> letter</span>, not a blast.
         </h1>
         <p className="mt-6 max-w-xl text-lg text-ink2 animate-rise md:text-xl" style={{ animationDelay: "140ms" }}>
-          ApplyLoop sends each HR a personalized email, follows up when they go quiet,
+          Hiremory sends each HR a personalized email, follows up when they go quiet,
           and shares your resume the moment they say yes. You write once; it works for weeks.
         </p>
         <div className="animate-rise" style={{ animationDelay: "220ms" }}>
@@ -33,7 +33,7 @@ export default function Landing() {
           {[
             ["The old way", "Copy, paste, rename, attach, send. Repeat 800 times. Forget who you mailed. Never follow up."],
             ["The honest truth", "One cold email gets ignored. The reply comes from the second touch — which nobody ever sends."],
-            ["The ApplyLoop way", "Upload once. It personalizes, paces, follows up, tracks replies, and sends your resume on a yes."],
+            ["The Hiremory way", "Upload once. It personalizes, paces, follows up, tracks replies, and sends your resume on a yes."],
           ].map(([h, p], i) => (
             <div key={h} className="animate-rise" style={{ animationDelay: `${i * 80}ms` }}>
               <div className="font-display text-2xl">{h}</div>
@@ -49,7 +49,7 @@ export default function Landing() {
         <h2 className="mt-3 max-w-2xl text-4xl md:text-5xl">Four steps. Then it runs itself.</h2>
         <div className="mt-14 grid gap-px overflow-hidden rounded-xl2 border border-line bg-line md:grid-cols-2">
           {[
-            ["01", "Create an account & connect your mailbox", "Sign up, then connect any provider (Gmail, Outlook, Zoho) with an app password. ApplyLoop sends from your real inbox, so replies land where you already look."],
+            ["01", "Create an account & connect your mailbox", "Sign up, then connect any provider (Gmail, Outlook, Zoho) with an app password. Hiremory sends from your real inbox, so replies land where you already look."],
             ["02", "Add recipients & resume", "Upload an HR list as CSV for bulk, or paste a handful of emails for a targeted batch. Drop in your resume."],
             ["03", "Review the one email", "We draft a personalized, recruiter-tested email. Tweak the wording once; every send is tailored to the person and company."],
             ["04", "Let the loop close", "It drips safely, nudges non-repliers after a few days, classifies replies, and auto-sends your resume when asked."],
@@ -73,7 +73,7 @@ export default function Landing() {
               <span className="tag">Bulk mode</span>
               <h3 className="mt-4 text-2xl">Upload a list</h3>
               <p className="mt-2 text-ink2">
-                Drop a CSV of HR contacts (PDF/Excel coming soon). ApplyLoop reads names,
+                Drop a CSV of HR contacts (PDF/Excel coming soon). Hiremory reads names,
                 emails, titles and companies, removes junk and duplicate companies, and
                 queues them for safe, paced sending over days or weeks.
               </p>
@@ -88,7 +88,7 @@ export default function Landing() {
               <h3 className="mt-4 text-2xl">Paste a few emails</h3>
               <p className="mt-2 text-ink2">
                 Found 10 great companies on LinkedIn this morning? Paste the emails into a
-                box, separated by commas or new lines. ApplyLoop sends each a personalized
+                box, separated by commas or new lines. Hiremory sends each a personalized
                 note in seconds. No file, no setup.
               </p>
               <ul className="mt-5 space-y-2 text-[15px] text-ink2">
@@ -111,7 +111,7 @@ export default function Landing() {
             <p className="eyebrow">Why it lands</p>
             <h2 className="mt-3 text-4xl md:text-5xl">Built to get replies, not just hit send.</h2>
             <p className="mt-5 max-w-md text-lg text-ink2">
-              Volume tools get you blocked. ApplyLoop is tuned for deliverability and
+              Volume tools get you blocked. Hiremory is tuned for deliverability and
               the human on the other side: real personalization, gentle pacing, and a
               follow-up that does the heavy lifting.
             </p>
@@ -169,7 +169,7 @@ export default function Landing() {
 
       <footer className="border-t border-line">
         <div className="container-x flex flex-col items-center justify-between gap-3 py-8 text-[14px] text-ink2 md:flex-row">
-          <span className="font-display text-lg text-ink">ApplyLoop</span>
+          <span className="font-display text-lg text-ink">Hiremory</span>
           <span>Sends from your own inbox. Your data stays yours.</span>
           <span className="flex gap-4">
             <a href="/privacy" className="link-grow hover:text-ink">Privacy</a>

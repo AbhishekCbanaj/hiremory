@@ -16,7 +16,7 @@ const sans = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "ApplyLoop — personalized job outreach on autopilot",
+  title: "Hiremory — personalized job outreach on autopilot",
   description:
     "Reach hundreds of recruiters with a personalized email each, follow up automatically, and send your resume the moment they say yes.",
 };

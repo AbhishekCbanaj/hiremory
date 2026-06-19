@@ -1,4 +1,4 @@
-name: ApplyLoop worker
+name: Hiremory worker
 
 # Free background sender: runs on a schedule and can be triggered by hand.
 # GitHub Actions cron is best-effort (may lag a few minutes under load).
@@ -13,7 +13,7 @@ on:
         default: true
 
 concurrency:
-  group: applyloop-worker
+  group: hiremory-worker
   cancel-in-progress: false   # never run two senders at once
 
 jobs:
@@ -38,6 +38,8 @@ jobs:
           MAILBOX_ENC_KEY: ${{ secrets.MAILBOX_ENC_KEY }}
           APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}

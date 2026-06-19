@@ -10,24 +10,22 @@
 html { scroll-behavior: smooth; }
 
 body {
-  background-color: #0B1020;
-  color: #E8ECF5;
+  background-color: #FFFFFF;
+  color: #111813;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  /* layered glow + faint starfield grain on the midnight canvas */
+  /* faint optimistic wash — emerald top-right, amber far-left — barely there */
   background-image:
-    radial-gradient(900px 500px at 78% -8%, rgba(110, 231, 240, 0.10), transparent 60%),
-    radial-gradient(700px 500px at 8% 8%, rgba(124, 92, 255, 0.08), transparent 55%),
-    radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: auto, auto, 4px 4px;
-  background-attachment: fixed, fixed, scroll;
+    radial-gradient(820px 460px at 88% -10%, rgba(4, 120, 87, 0.06), transparent 60%),
+    radial-gradient(680px 460px at -5% 0%, rgba(217, 119, 6, 0.045), transparent 55%);
+  background-attachment: fixed;
 }
 
 @layer base {
   h1, h2, h3 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
-    line-height: 1.04;
+    line-height: 1.05;
   }
 }
 
@@ -39,39 +37,34 @@ body {
            text-[15px] font-semibold transition-all duration-200;
   }
   .btn-primary {
-    @apply btn text-[#06141A];
-    background: linear-gradient(180deg, #7DECF5, #4FD6E1);
-    box-shadow: 0 0 0 1px rgba(110, 231, 240, 0.3), 0 8px 28px rgba(110, 231, 240, 0.30);
+    @apply btn text-white;
+    background: linear-gradient(180deg, #0B8F66, #047857);
+    box-shadow: 0 1px 2px rgba(4,120,87,0.25), 0 6px 18px rgba(4,120,87,0.22);
   }
-  .btn-primary:hover { @apply -translate-y-px; filter: brightness(1.05); }
+  .btn-primary:hover { @apply -translate-y-px; filter: brightness(1.04); }
   .btn-ghost {
-    @apply btn border border-line text-ink;
-    background: rgba(255, 255, 255, 0.03);
+    @apply btn border border-line bg-white text-ink;
   }
-  .btn-ghost:hover { @apply -translate-y-px; border-color: rgba(110, 231, 240, 0.45); }
+  .btn-ghost:hover { @apply -translate-y-px; border-color: rgba(4,120,87,0.45); color: #047857; }
 
-  /* frosted glass card — the core surface of the midnight theme */
+  /* solid white cards with a hairline + soft shadow (no dark glass) */
   .card, .surface {
-    @apply rounded-xl2 p-7;
-    background: rgba(255, 255, 255, 0.045);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 1px 1px rgba(0,0,0,0.4), 0 18px 44px rgba(0,0,0,0.40);
+    @apply rounded-xl2 border border-line bg-white p-7;
+    box-shadow: 0 1px 2px rgba(17,24,19,0.05), 0 6px 20px rgba(17,24,19,0.05);
     transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   }
   .surface { @apply p-0; }
   .card:hover, .lift:hover {
     transform: translateY(-3px);
-    border-color: rgba(110, 231, 240, 0.30);
-    box-shadow: 0 1px 1px rgba(0,0,0,0.4), 0 26px 60px rgba(0,0,0,0.5);
+    border-color: rgba(4,120,87,0.30);
+    box-shadow: 0 2px 6px rgba(17,24,19,0.06), 0 18px 40px rgba(17,24,19,0.10);
   }
 
   .eyebrow { @apply text-[12px] font-semibold uppercase tracking-[0.18em] text-clay; }
   .tag {
-    @apply inline-flex items-center rounded-full px-3 py-1 text-[13px] text-ink2;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    @apply inline-flex items-center rounded-full bg-paper2 px-3 py-1 text-[13px] text-ink2;
+    border: 1px solid var(--tw-prose-hr, #E4E9E6);
+    border-color: #E4E9E6;
   }
 }
 
@@ -84,6 +77,5 @@ body {
 }
 .link-grow:hover { background-size: 100% 1.5px; }
 
-/* native form controls inherit the dark theme */
-input, textarea { color: #E8ECF5; }
-input::placeholder, textarea::placeholder { color: #5E6B86; }
+input, textarea { color: #111813; }
+input::placeholder, textarea::placeholder { color: #9AA8A0; }

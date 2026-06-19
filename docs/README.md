@@ -1,60 +1,69 @@
-# HR Job Application Automation
+# Hiremory Documentation
 
-Upload a list of HR contacts → personalize a cold email per HR/company →
-attach your resume → drip-send via Gmail (40/day) → track replies, bounces,
-and no-replies on a dashboard.
+Welcome to the Hiremory docs. Everything you need to understand, run, deploy, and
+contribute to the project lives here.
 
-## What it does
-- Parses an HR list in **PDF / Excel / Docx / CSV** (columns: Name, Email, Title, Company).
-- Writes a **human-toned, personalized** email (first name + company + your real wins).
-- Attaches the **role-matched resume** (DA / BA / DS / ML), or the default.
-- Sends **40/day, 45s apart** to protect your Gmail from spam flags.
-- **Never double-sends** — `data/sent_log.csv` is the source of truth, survives across days.
-- **Dashboard**: Sent · Replied · Awaiting · Bounced (reads your Gmail).
+> New here? Start with the [project README](../README.md) for the 30-second pitch,
+> then come back for depth.
 
-## One-time setup
+## 📚 Table of contents
 
-```bash
-cd HR_Job_Automation
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r engine/requirements.txt
-cd engine        # run everything from inside engine/
+### Core guides
+| Guide | What it covers |
+|---|---|
+| [Architecture](architecture.md) | How the pieces fit: web, worker, database, AI |
+| [Getting Started](getting-started.md) | Run Hiremory locally, end to end |
+| [Configuration](configuration.md) | Every environment variable, explained |
+| [Deployment](deployment.md) | Ship to Vercel + run the worker for free |
+| [Supabase Setup](SUPABASE_SETUP.md) | Create and wire up the backend |
+
+### Page-by-page (the app, section by section)
+Each page of the app has its own doc — what the user does there, and how it works under the hood.
+
+| Page | Doc |
+|---|---|
+| Landing | [pages/landing.md](pages/landing.md) |
+| Sign up / Log in / Reset password | [pages/auth.md](pages/auth.md) |
+| Onboarding & Profile | [pages/onboarding.md](pages/onboarding.md) |
+| Compose | [pages/compose.md](pages/compose.md) |
+| Dashboard | [pages/dashboard.md](pages/dashboard.md) |
+| Analytics | [pages/analytics.md](pages/analytics.md) |
+| Replies | [pages/replies.md](pages/replies.md) |
+| Follow-ups | [pages/followups.md](pages/followups.md) |
+| Mailbox | [pages/mailbox.md](pages/mailbox.md) |
+| Settings | [pages/settings.md](pages/settings.md) |
+| Privacy | [pages/privacy.md](pages/privacy.md) |
+
+### Under the hood
+| Topic | Doc |
+|---|---|
+| The Python worker | [worker/overview.md](worker/overview.md) |
+| Database schema | [database/schema.md](database/schema.md) |
+| Email automation (deep dive) | [Email_automation.md](Email_automation.md) |
+
+### Contributing
+| Doc | |
+|---|---|
+| [Contributing guide](../CONTRIBUTING.md) | How to set up and submit changes |
+| [Code of Conduct](../CODE_OF_CONDUCT.md) | Community standards |
+| [Security policy](../SECURITY.md) | Reporting vulnerabilities |
+
+### Reference
+- [Legacy Streamlit engine](engine-legacy.md) — the original prototype (`engine/`), kept for reference.
+
+## How these docs are organized
+
 ```
-
-### 1. Drop your resumes in
-Copy your PDFs into `resumes/` with these exact names:
+docs/
+├── README.md            ← you are here (index)
+├── architecture.md      system overview
+├── getting-started.md   local setup
+├── configuration.md     env vars
+├── deployment.md        Vercel + worker
+├── SUPABASE_SETUP.md    backend setup
+├── Email_automation.md  deep dive
+├── engine-legacy.md     legacy prototype
+├── pages/               one doc per app page
+├── worker/              the Python sender
+└── database/            schema & migrations
 ```
-resumes/Abhishek_Banaj_da.pdf   (default — Data Analyst)
-resumes/Abhishek_Banaj_ba.pdf   (Business Analyst)
-resumes/Abhishek_Banaj_ds.pdf   (Data Scientist)
-resumes/Abhishek_Banaj_ml.pdf   (ML / AI Engineer)
-```
-
-### 2. Gmail access (one time)
-1. Go to Google Cloud Console → create a project → **enable the Gmail API**.
-2. Create **OAuth client ID → Desktop app** → download the JSON.
-3. Save it as `credentials.json` in this folder.
-4. First send opens a browser to authorize `abhishekbanaj01@gmail.com`.
-   A `token.json` is cached so you're only asked once.
-
-> Gmail caps a personal account around ~500 emails/day and flags bulk cold
-> mail fast. Keep `DAILY_BATCH_SIZE` at 30–50. The full 1,842 list drips over
-> ~6 weeks — that's normal and gets *better* reply rates than a blast.
-
-## Run
-
-```bash
-streamlit run app.py
-```
-
-- **Send tab** — upload list, preview the next email, send a batch.
-- **Dashboard tab** — refresh to pull reply/bounce status from Gmail.
-
-## Edit your details
-Everything (name, links, batch size, roles, resume mapping) lives in
-`config.py`. Confirm your LinkedIn/GitHub URLs there before the first send.
-
-## Per-company resume tailoring (later)
-This attaches the best-fit *master* resume. True per-company PDF tailoring
-needs your **LaTeX or Word source** (rendered PDFs can't be edited cleanly).
-Share that and it can be added.

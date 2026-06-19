@@ -8,14 +8,16 @@ A transport implements:
   find_reply(row) -> (msg_id, text) | None   # latest inbound from the contact
 """
 import os
+import re
 import time
 import socket
 import smtplib
 import imaplib
 import email
 import mimetypes
+import datetime as dt
 from email.message import EmailMessage
-from email.utils import make_msgid, parseaddr
+from email.utils import make_msgid, parseaddr, parsedate_to_datetime
 
 
 class PermanentSendError(Exception):
@@ -97,6 +99,15 @@ class SmtpTransport:
             except _TRANSIENT as e:
                 last = e
                 time.sleep(2 * (i + 1))
+            except smtplib.SMTPResponseException as e:
+                # Many providers signal a PERMANENT recipient/policy rejection as a
+                # 5xx data error (550/553) rather than SMTPRecipientsRefused. Don't
+                # retry those — surface as permanent so the address is suppressed.
+                # 4xx stays transient (retry with backoff).
+                if 500 <= (e.smtp_code or 0) < 600:
+                    raise PermanentSendError(f"{e.smtp_code} {e.smtp_error}") from e
+                last = e
+                time.sleep(2 * (i + 1))
             except smtplib.SMTPException as e:
                 # unknown SMTP error: one retry, then surface it
                 last = e
@@ -148,20 +159,35 @@ class SmtpTransport:
                     if is_bounce:
                         self._bounce_blob += " " + raw.decode("utf-8", "ignore").lower()
                     elif frm:
-                        # ids are ascending, so the last write per sender is the newest
-                        self._by_sender[frm] = (mid.decode(), _body_text(parsed))
+                        # keep the newest message per sender (by Date header; falls
+                        # back to scan order when a Date is missing/unparseable)
+                        cur = (mid.decode(), _body_text(parsed), _msg_date(parsed))
+                        prev = self._by_sender.get(frm)
+                        if prev is None or _is_newer(cur[2], prev[2]):
+                            self._by_sender[frm] = cur
         except Exception:
             pass  # treat an unreachable inbox as "no replies" this run
 
     def find_reply(self, row):
-        """(uid, text) of the newest inbound message from the contact, or None."""
+        """(msg_id, text) of the newest inbound message from the contact, or None.
+        Only counts a message that arrived AFTER we emailed them — otherwise an
+        unrelated or pre-existing email from the same address would be mistaken
+        for a reply (and could trigger an auto-resume). Falls back to returning
+        the message when either date is missing, to avoid dropping real replies."""
         self._prime()
-        return self._by_sender.get((row.get("email") or "").lower())
+        hit = self._by_sender.get((row.get("email") or "").lower())
+        if not hit:
+            return None
+        mid, text, mdate = hit
+        sent = _parse_iso(row.get("sent_at"))
+        if mdate and sent and mdate < sent:
+            return None
+        return (mid, text)
 
     def find_bounces(self, addresses):
         """Addresses that appear in a delivery-failure message."""
         self._prime()
-        return {a for a in addresses if a.lower() in self._bounce_blob}
+        return {a for a in addresses if _addr_in_blob(a, self._bounce_blob)}
 
 
 # ------------------------------------------------------------- Gmail OAuth
@@ -210,6 +236,49 @@ class GmailTransport:
 
 
 # ------------------------------------------------------------------ helpers
+def _addr_in_blob(addr: str, blob: str) -> bool:
+    """True if `addr` appears in `blob` as a whole email address — not merely as a
+    substring. Prevents 'hr@acme.co' from matching inside 'hr@acme.com' (which
+    would suppress a valid, different contact). Guards the address with negative
+    lookarounds for email-continuation characters."""
+    if not addr:
+        return False
+    pattern = r"(?<![\w.+%-])" + re.escape(addr.lower()) + r"(?![\w.\-])"
+    return re.search(pattern, blob) is not None
+
+
+def _msg_date(parsed):
+    """Parse a message's Date header to an aware (UTC-defaulted) datetime, or None."""
+    try:
+        d = parsedate_to_datetime(parsed.get("Date"))
+    except (TypeError, ValueError):
+        return None
+    if d is None:
+        return None
+    if d.tzinfo is None:
+        d = d.replace(tzinfo=dt.timezone.utc)
+    return d
+
+
+def _parse_iso(s):
+    """Parse an ISO timestamp string to an aware (UTC-defaulted) datetime, or None."""
+    try:
+        d = dt.datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if d.tzinfo is None:
+        d = d.replace(tzinfo=dt.timezone.utc)
+    return d
+
+
+def _is_newer(a, b) -> bool:
+    """Should a message dated `a` replace one dated `b`? When either date is
+    unknown, prefer the later-scanned message (return True)."""
+    if a is None or b is None:
+        return True
+    return a >= b
+
+
 def _body_text(msg) -> str:
     if msg.is_multipart():
         for part in msg.walk():

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { parseEmails, parseCsv, type Contact } from "@/lib/parse";
+import { EmailPreview } from "@/components/EmailPreview";
 
 type Mode = "quick" | "bulk";
 
@@ -16,8 +17,25 @@ export default function Compose() {
   const [pasted, setPasted] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [resume, setResume] = useState<File | null>(null);
+  const [instructions, setInstructions] = useState("");
+  const [jd, setJd] = useState("");
+  const [tailored, setTailored] = useState<{ summary: string; sections: { heading: string; bullets: string[] }[] } | null>(null);
+  const [tailoring, setTailoring] = useState(false);
+  const [tailorErr, setTailorErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  async function previewTailored() {
+    setTailoring(true); setTailorErr(null); setTailored(null);
+    const res = await fetch("/api/resume/tailor", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_description: jd }),
+    });
+    const out = await res.json();
+    setTailoring(false);
+    if (!res.ok) { setTailorErr(out.error ?? "Failed"); return; }
+    setTailored(out);
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -63,6 +81,8 @@ export default function Compose() {
           name: name || (mode === "quick" ? "Quick batch" : file?.name || "Bulk campaign"),
           mode,
           status: "draft",
+          instructions: instructions.trim() || null,
+          job_description: jd.trim() || null,
         })
         .select("id")
         .single();
@@ -169,6 +189,44 @@ export default function Compose() {
           </label>
         </div>
       </div>
+
+      <EmailPreview instructions={instructions} onInstructions={setInstructions}
+        sampleCompany={emails[0]?.company} />
+
+      <section className="mt-12">
+        <p className="eyebrow">Tailor your resume</p>
+        <h2 className="mt-2 text-2xl">Match your resume to the job</h2>
+        <p className="mt-1 text-ink2">Paste the job description. When a recruiter says yes, the worker tailors your resume to it and attaches a PDF. (Needs your resume in <a href="/onboarding" className="text-clay underline">Profile</a> + an AI key.)</p>
+        <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_1fr]">
+          <div className="card">
+            <textarea rows={9} className="w-full resize-y rounded-xl2 border border-line bg-paper2 px-4 py-3 text-[15px] outline-none focus:border-clay"
+              value={jd} onChange={(e) => setJd(e.target.value)} placeholder="Paste the job description here…" />
+            <button type="button" onClick={previewTailored} disabled={tailoring || !jd.trim()} className="btn-ghost mt-3">
+              {tailoring ? "Tailoring…" : "Preview tailored resume"}
+            </button>
+            {tailorErr && <p className="mt-2 text-[14px] text-clay">{tailorErr}</p>}
+          </div>
+          <div className="card">
+            {tailored ? (
+              <div className="text-[14px]">
+                <p className="text-ink2">{tailored.summary}</p>
+                {tailored.sections.map((s) => (
+                  <div key={s.heading} className="mt-3">
+                    <div className="font-display text-ink">{s.heading}</div>
+                    <ul className="mt-1 space-y-1 text-ink2">
+                      {s.bullets.map((b) => <li key={b}>• {b}</li>)}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid h-full place-items-center py-12 text-center text-ink2">
+                <p>Tailored resume preview appears here.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       <div className="mt-8 flex flex-wrap items-center gap-4">
         <button onClick={save} disabled={busy} className="btn-primary">
