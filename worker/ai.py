@@ -10,7 +10,7 @@ ONE shared model + per-user context (profile.ai_notes + campaign instructions).
 No per-user training. Every function fails safe to None.
 
 Env:
-  GEMINI_API_KEY / GEMINI_MODEL (default gemini-2.0-flash)
+  GEMINI_API_KEY / GEMINI_MODEL (default gemini-2.5-flash)
   ANTHROPIC_API_KEY / ANTHROPIC_MODEL (default claude-opus-4-8)
 """
 import os
