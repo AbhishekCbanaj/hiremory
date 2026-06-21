@@ -22,7 +22,7 @@ export default function Landing() {
         </div>
         <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px] text-ink2 animate-rise" style={{ animationDelay: "300ms" }}>
           <span className="tag">Sends from your own inbox</span>
-          <span className="tag">40/day, spam-safe pacing</span>
+          <span className="tag">Warms up &amp; paces to stay out of spam</span>
           <span className="tag">Auto follow-ups + auto-resume</span>
         </div>
       </section>
