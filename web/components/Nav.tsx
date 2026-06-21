@@ -43,7 +43,7 @@ export function Nav() {
     <header className="sticky top-0 z-50 border-b border-line bg-paper/80 backdrop-blur-md">
       <div className="container-x flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-clay text-paper font-display text-lg">a</span>
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-clay text-paper font-display text-lg">H</span>
           <span className="font-display text-xl tracking-tight">Hiremory</span>
         </Link>
 

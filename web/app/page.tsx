@@ -150,7 +150,7 @@ export default function Landing() {
                 <ul className="mt-5 space-y-2 text-[15px] text-ink2">
                   {(feats as string[]).map((f) => <li key={f}>• {f}</li>)}
                 </ul>
-                <Link href="/dashboard" className={`mt-7 w-full ${hot ? "btn-primary" : "btn-ghost"}`}>
+                <Link href={name === "Teams" ? "mailto:hello@hiremory.com" : "/signup"} className={`mt-7 w-full ${hot ? "btn-primary" : "btn-ghost"}`}>
                   {name === "Teams" ? "Contact us" : "Get started"}
                 </Link>
               </div>
