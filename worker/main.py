@@ -102,14 +102,17 @@ def _eligible_contacts(uid: str, profile: dict, daily_cap: int) -> list[dict]:
     sent_month = len(supa.select("send_log",
                      {"user_id": f"eq.{uid}", "sent_at": f"gte.{month}", "select": "id"}))
     month_cap = PLAN_LIMITS.get(profile.get("plan") or "free", 50)
-    if sent_month >= month_cap:
-        log(f"  monthly plan cap reached ({month_cap}, plan={profile.get('plan') or 'free'}); skipping")
+    # One-time top-up credits extend the monthly allowance beyond the plan cap.
+    topup_credits = int(profile.get("email_credits") or 0)
+    allowance = month_cap + topup_credits
+    if sent_month >= allowance:
+        log(f"  monthly allowance reached ({month_cap} plan + {topup_credits} credits); skipping")
         return []
 
     today = dt.date.today().isoformat()
     sent_today = len(supa.select("send_log",
                      {"user_id": f"eq.{uid}", "sent_at": f"gte.{today}", "select": "id"}))
-    remaining = min(daily_cap, month_cap - sent_month) - sent_today
+    remaining = min(daily_cap, allowance - sent_month) - sent_today
     if remaining <= 0:
         log(f"  daily cap reached ({daily_cap}); skipping sends")
         return []
@@ -126,14 +129,25 @@ def phase_send(tx, uid: str, profile: dict, mailbox_id, daily_cap: int) -> None:
                      supa.select("campaigns", {"user_id": f"eq.{uid}", "select": "id,instructions"})}
     except Exception:
         instr_map = {}
+
+    # For credit accounting: how many sends this month already happened, the plan
+    # cap, and the credit pool — so we decrement credits only for sends that go
+    # beyond the plan's monthly cap.
+    month_cap = PLAN_LIMITS.get(profile.get("plan") or "free", 50)
+    topup_credits = int(profile.get("email_credits") or 0)
+    month_start = dt.date.today().replace(day=1).isoformat()
+    sent_month_before = len(supa.select("send_log",
+                            {"user_id": f"eq.{uid}", "sent_at": f"gte.{month_start}", "select": "id"}))
+
     fails = 0
+    sent_this_run = 0
     for c in _eligible_contacts(uid, profile, daily_cap):
         if _sends_this_run >= MAX_SENDS:
             log("  MAX_SENDS_PER_RUN hit; stopping sends")
-            return
+            break
         status = _send_one(tx, uid, profile, c, mailbox_id, instr_map.get(c.get("campaign_id")))
         if status == "auth_fail":
-            return  # mailbox already paused
+            break  # mailbox already paused
         if status == "failed":
             fails += 1
             # Circuit-breaker: stop after repeated failures. Works for Gmail
@@ -145,10 +159,26 @@ def phase_send(tx, uid: str, profile: dict, mailbox_id, daily_cap: int) -> None:
                     log(f"  paused mailbox after {fails} consecutive failures")
                 else:
                     log(f"  stopping sends after {fails} consecutive failures")
-                return
+                break
         elif status == "sent":
             fails = 0
+            sent_this_run += 1
             time.sleep(SPACING)
+
+    _burn_credits(uid, topup_credits, month_cap, sent_month_before, sent_this_run)
+
+
+def _burn_credits(uid: str, topup_credits: int, month_cap: int,
+                  sent_month_before: int, sent_this_run: int) -> None:
+    """Decrement top-up credits for the portion of this run's sends that exceeded
+    the plan's monthly cap (plan cap is used first, credits only after)."""
+    if topup_credits <= 0 or sent_this_run <= 0 or DRY_RUN:
+        return
+    used = max(0, sent_month_before + sent_this_run - month_cap) - max(0, sent_month_before - month_cap)
+    used = min(topup_credits, used)
+    if used > 0:
+        supa.update("profiles", {"id": uid}, {"email_credits": topup_credits - used})
+        log(f"  consumed {used} top-up credit(s); {topup_credits - used} remaining")
 
 
 def _compose(profile: dict, c: dict, url: str, instructions=None) -> tuple[str, str, str]:
