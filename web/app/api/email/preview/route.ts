@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/ratelimit";
+import { openaiJson } from "@/lib/aiJson";
 
 export const runtime = "nodejs";
 
@@ -133,22 +134,7 @@ ${signature(profile)}`;
   try {
     let data: { subject?: string; body?: string } = {};
     if (provider === "openai") {
-      const base = (process.env.AI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-      const r = await fetch(`${base}/chat/completions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.AI_API_KEY}` },
-        body: JSON.stringify({
-          model: process.env.AI_MODEL || "gpt-4o-mini", max_tokens: 1200,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: SYS + ' Respond as JSON: {"subject":"...","body":"..."}' },
-            { role: "user", content: userMsg },
-          ],
-        }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(`AI provider error ${r.status}: ${JSON.stringify(j?.error ?? j).slice(0, 300)}`);
-      data = JSON.parse(j?.choices?.[0]?.message?.content ?? "{}");
+      data = await openaiJson(SYS + ' Respond as JSON: {"subject":"...","body":"..."}', userMsg, 1200);
     } else if (provider === "gemini") {
       const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {

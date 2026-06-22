@@ -69,14 +69,15 @@ function Tile({ b }: { b: Brand }) {
 }
 
 function Row({ items, reverse }: { items: Brand[]; reverse?: boolean }) {
-  const doubled = [...items, ...items];
+  // Tripled so the row fills the full viewport width edge-to-edge (no empty side).
+  const filled = [...items, ...items, ...items];
   return (
-    <div className="overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
+    <div className="overflow-hidden">
       <div
         className="flex w-max gap-4 animate-marquee motion-reduce:animate-none"
         style={reverse ? { animationDirection: "reverse" } : undefined}
       >
-        {doubled.map((b, i) => (
+        {filled.map((b, i) => (
           <Tile key={`${b.name}-${i}`} b={b} />
         ))}
       </div>
@@ -88,30 +89,37 @@ export function Audience() {
   const row1 = BRANDS.slice(0, 8);
   const row2 = BRANDS.slice(8);
   return (
-    <section className="relative overflow-hidden border-y border-line py-24 bg-[linear-gradient(180deg,#EEF4F0,#F3F7F4)]">
-      {/* logo wall */}
+    <section className="relative overflow-hidden border-y border-line py-24 bg-[linear-gradient(180deg,#EAF2EC,#F3F7F4)]">
+      {/* logo wall — fills the whole section, both sides */}
       <div className="absolute inset-0 flex flex-col justify-center gap-4">
         <Row items={row1} />
         <Row items={row2} reverse />
-        <Row items={row2} />
-        <Row items={row1} reverse />
+        <Row items={row1} />
+        <Row items={row2} reverse />
       </div>
-      {/* soft scrim — only dims directly behind the card so the tiles stay crisp at the edges */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(48%_60%_at_50%_50%,rgba(240,245,242,0.92),rgba(240,245,242,0.35)_60%,transparent_78%)]" />
+      {/* very light overall wash so edge tiles read as "behind" without hiding a side */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_50%,transparent,rgba(234,242,236,0.45))]" />
 
       <div className="container-x relative">
-        <div className="mx-auto max-w-2xl rounded-3xl border border-line bg-white/80 p-8 text-center shadow-lift backdrop-blur-md md:p-12">
-          <p className="eyebrow">Where your leads come from</p>
-          <h2 className="mt-3 text-4xl md:text-5xl">Source from anywhere. We do the outreach.</h2>
-          <p className="mx-auto mt-4 max-w-xl text-ink2">
-            Found HRs on LinkedIn, Naukri, Indeed, or a recruiting-agency list? Paste them in — Hiremory
-            writes a personalized email to each and sends it from your own inbox. Built for job seekers,
-            career switchers, and the agencies that place them.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-            <span className="tag">No integrations to set up</span>
-            <span className="tag">You bring the contacts</span>
-            <span className="tag">We write + send each one</span>
+        {/* Liquid Glass card (iOS/macOS 26 style): translucent material, heavy
+            backdrop blur + saturation so the logos show through, a specular
+            top highlight, and a soft floating shadow. */}
+        <div className="relative mx-auto max-w-2xl overflow-hidden rounded-[28px] border border-white/60 bg-white/40 p-8 text-center ring-1 ring-black/[0.04] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_10px_50px_rgba(17,24,19,0.14),0_2px_10px_rgba(17,24,19,0.06)] md:p-12">
+          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_0%,rgba(255,255,255,0.55),transparent)]" />
+          <div className="relative">
+            <p className="eyebrow">Where your leads come from</p>
+            <h2 className="mt-3 text-4xl md:text-5xl">Source from anywhere. We do the outreach.</h2>
+            <p className="mx-auto mt-4 max-w-xl text-ink2">
+              Found HRs on LinkedIn, Naukri, Indeed, or a recruiting-agency list? Paste them in — Hiremory
+              writes a personalized email to each and sends it from your own inbox. Built for job seekers,
+              career switchers, and the agencies that place them.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+              <span className="tag bg-white/70 backdrop-blur">No integrations to set up</span>
+              <span className="tag bg-white/70 backdrop-blur">You bring the contacts</span>
+              <span className="tag bg-white/70 backdrop-blur">We write + send each one</span>
+            </div>
           </div>
         </div>
       </div>

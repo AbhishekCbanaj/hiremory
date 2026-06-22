@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/ratelimit";
+import { openaiJson } from "@/lib/aiJson";
 
 export const runtime = "nodejs";
 
@@ -57,24 +58,7 @@ const GEMINI_SCHEMA = {
 async function structure(text: string): Promise<Record<string, unknown> | null> {
   const user = `RESUME TEXT:\n${text}`;
   if (process.env.AI_API_KEY) {
-    const base = (process.env.AI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-    const r = await fetch(`${base}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.AI_API_KEY}` },
-      body: JSON.stringify({
-        model: process.env.AI_MODEL || "gpt-4o-mini", max_tokens: 1500,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: SYS + " Respond as a single JSON object: " + JSON.stringify(STD_SCHEMA.properties) },
-          { role: "user", content: user },
-        ],
-      }),
-    });
-    const j = await r.json();
-    if (!r.ok) throw new Error(`AI provider error ${r.status}: ${JSON.stringify(j?.error ?? j).slice(0, 300)}`);
-    const content = j?.choices?.[0]?.message?.content;
-    if (!content) throw new Error(`AI returned no content: ${JSON.stringify(j).slice(0, 300)}`);
-    return JSON.parse(content);
+    return openaiJson(SYS + " Respond as a single JSON object: " + JSON.stringify(STD_SCHEMA.properties), user, 1500);
   }
   if (process.env.GEMINI_API_KEY) {
     const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
