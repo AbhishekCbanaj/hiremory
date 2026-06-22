@@ -62,7 +62,17 @@ export default function Onboarding() {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/resume/parse", { method: "POST", body: fd });
-      const out = await res.json();
+      const raw = await res.text();
+      let out: Partial<{
+        full_name: string; phone: string; linkedin_url: string; github_url: string;
+        headline: string; intro_line: string; total_experience: string; achievements: string;
+        pitch_points: string[]; resume_text: string; error: string;
+      }>;
+      try {
+        out = JSON.parse(raw);
+      } catch {
+        throw new Error("Server hiccup reading your resume. Try again in a moment, or fill the fields below manually.");
+      }
       if (!res.ok) throw new Error(out.error ?? "Couldn't read that resume");
       setP((prev) => ({
         ...prev,

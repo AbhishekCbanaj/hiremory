@@ -5,6 +5,19 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
+// pdfjs (via pdf-parse) calls Promise.withResolvers, which only exists on Node 22+.
+// engines pins Node 22 on Vercel; this polyfill is a safety net for older runtimes.
+type Resolvers<T> = { promise: Promise<T>; resolve: (v: T | PromiseLike<T>) => void; reject: (r?: unknown) => void };
+const _P = Promise as unknown as { withResolvers?: <T>() => Resolvers<T> };
+if (typeof _P.withResolvers !== "function") {
+  _P.withResolvers = function <T>(): Resolvers<T> {
+    let resolve!: (v: T | PromiseLike<T>) => void;
+    let reject!: (r?: unknown) => void;
+    const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+    return { promise, resolve, reject };
+  };
+}
+
 // Resume-first onboarding: extract text from the uploaded PDF, then have the AI
 // structure it into profile fields. Returns the extracted fields (the client
 // fills the form so the user just confirms). Provider precedence matches ai.py.
