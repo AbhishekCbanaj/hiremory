@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { HeroCta } from "@/components/HeroCta";
 import { Reveal } from "@/components/Reveal";
+import { Hero3D } from "@/components/Hero3D";
 
 export default function Landing() {
   return (
     <main className="overflow-clip">
       {/* ---------------------------------------------------------------- HERO */}
       <section className="container-x relative pt-20 pb-24 md:pt-28 md:pb-32">
+        <Hero3D />
         <div className="absolute right-[-8rem] top-10 -z-10 h-[28rem] w-[28rem] rounded-full bg-clay/10 blur-3xl animate-floaty" />
         <div className="absolute left-[-10rem] top-40 -z-10 h-[24rem] w-[24rem] rounded-full bg-amber/10 blur-3xl animate-floaty" style={{ animationDelay: "1.5s" }} />
         <p className="eyebrow animate-rise">For job seekers who hate the spray-and-pray</p>
