@@ -166,6 +166,9 @@ _PERSONALIZE_SYSTEM = (
     "GREETING: recipient's first name if given, else 'Dear Hiring Team,'. Pick the single most "
     "impressive quantified achievement from the sender's experience for the achievement paragraph, and "
     "surface the hard skills/tools most relevant to the role (recruiters scan for these). "
+    "If a JOB DESCRIPTION is provided, tailor the email to that specific role and weave in one or two "
+    "concrete reasons the sender is a strong fit — match their real experience/skills to the JD's key "
+    "requirements (truthfully, never invent or claim a requirement they don't meet). "
     "Write like a sharp human, not a robot: correct grammar, no buzzword stuffing, no em-dashes, no "
     "unsubscribe line. End with EXACTLY the signature block given, verbatim, on its own lines. "
     "Return {subject, body} where body excludes the 'Subject:' line."
@@ -196,6 +199,7 @@ def personalize(profile: dict, contact: dict, email_type: str | None = None,
         f"- Role applying for: {extras.get('role_title') or profile.get('headline') or 'the open role'}\n"
         + (f"- Where the posting was seen: {extras['apply_source']}\n" if extras.get("apply_source") else "")
         + (f"- Referred by: {extras['referrer_name']}\n" if extras.get("referrer_name") else "")
+        + (f"\nJOB DESCRIPTION (tailor to this role and explain the fit):\n{str(extras['job_description'])[:2500]}\n" if extras.get("job_description") else "")
         + (f"\nEXTRA INSTRUCTIONS:\n{instructions.strip()}\n" if instructions else "")
         + f"\nSIGNATURE (reproduce verbatim as the closing):\n{sig}\n"
     )

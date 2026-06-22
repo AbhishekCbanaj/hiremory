@@ -28,6 +28,7 @@ export default function Compose() {
   const [roleTitle, setRoleTitle] = useState("");
   const [applySource, setApplySource] = useState("");
   const [referrerName, setReferrerName] = useState("");
+  const [jd, setJd] = useState("");
 
   // read-only preview
   const [preview, setPreview] = useState<{ subject: string; body: string } | null>(null);
@@ -60,6 +61,7 @@ export default function Compose() {
           role_title: roleTitle || null,
           apply_source: applySource || null,
           referrer_name: referrerName || null,
+          job_description: jd || null,
           company: emails[0]?.company || "Acme Inc",
         }),
       });
@@ -103,6 +105,7 @@ export default function Compose() {
           role_title: roleTitle.trim() || null,
           apply_source: applySource.trim() || null,
           referrer_name: referrerName.trim() || null,
+          job_description: jd.trim() || null,
         })
         .select("id")
         .single();
@@ -193,6 +196,14 @@ export default function Compose() {
               placeholder="Who referred you (e.g. Priya Sharma)"
               className="rounded-xl2 border border-line bg-paper2 px-4 py-3 text-[15px] outline-none focus:border-clay" />
           )}
+        </div>
+
+        <div className="mt-5">
+          <div className="text-[13px] text-ink2">Job description <span className="text-ink2/70">(optional)</span></div>
+          <p className="mt-1 text-[13px] text-ink2">Paste it and the AI tailors the email to this exact role — reading the JD against your resume to spell out why you&apos;re a strong fit.</p>
+          <textarea value={jd} onChange={(e) => { setJd(e.target.value); setPreview(null); }} rows={5}
+            placeholder="Paste the job description here…"
+            className="mt-2 w-full resize-y rounded-xl2 border border-line bg-paper2 px-4 py-3 text-[15px] outline-none focus:border-clay" />
         </div>
       </div>
 

@@ -63,6 +63,9 @@ const SYS =
   + "degrees, or a referrer. If a detail is missing, write the sentence naturally without it (don't "
   + "leave brackets, don't fabricate). GREETING: recipient's first name if given, else 'Dear Hiring Team,'. "
   + "Pick the single most impressive quantified achievement and surface the role-relevant hard skills. "
+  + "If a JOB DESCRIPTION is provided, tailor the email to that role and weave in one or two concrete "
+  + "reasons the sender is a strong fit by matching their real experience to its key requirements "
+  + "(truthfully, never invent). "
   + "Write like a sharp human, not a robot. No em-dashes, no unsubscribe line. End with EXACTLY the "
   + "signature block given, verbatim. Return {subject, body} where body excludes the 'Subject:' line.";
 
@@ -84,6 +87,7 @@ export async function POST(request: Request) {
   const roleTitle = String(b.role_title ?? "").trim();
   const applySource = String(b.apply_source ?? "").trim();
   const referrerName = String(b.referrer_name ?? "").trim();
+  const jobDescription = String(b.job_description ?? "").trim().slice(0, 2500);
 
   const { data: p } = await supabase.from("profiles")
     .select("full_name, intro_line, headline, availability, pitch_points, resume_text, phone, email, linkedin_url, github_url")
@@ -113,7 +117,7 @@ RECIPIENT / TARGET:
 - Name: ${firstName}
 - Company: ${company}
 - Role applying for: ${roleTitle || profile.headline || "the open role"}
-${applySource ? `- Where the posting was seen: ${applySource}\n` : ""}${referrerName ? `- Referred by: ${referrerName}\n` : ""}
+${applySource ? `- Where the posting was seen: ${applySource}\n` : ""}${referrerName ? `- Referred by: ${referrerName}\n` : ""}${jobDescription ? `\nJOB DESCRIPTION (tailor to this role and explain the fit):\n${jobDescription}\n` : ""}
 SIGNATURE (reproduce verbatim as the closing):
 ${signature(profile)}`;
 

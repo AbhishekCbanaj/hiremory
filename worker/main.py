@@ -126,7 +126,7 @@ def phase_send(tx, uid: str, profile: dict, mailbox_id, daily_cap: int) -> None:
     try:
         camp_map = {x["id"]: x for x in supa.select("campaigns",
                     {"user_id": f"eq.{uid}",
-                     "select": "id,instructions,email_type,role_title,apply_source,referrer_name"})}
+                     "select": "id,instructions,email_type,role_title,apply_source,referrer_name,job_description"})}
     except Exception:
         camp_map = {}
 
@@ -186,7 +186,7 @@ def _compose(profile: dict, c: dict, url: str, camp: dict | None = None) -> tupl
     back to the static template when no AI key is set or generation fails."""
     camp = camp or {}
     extras = {"role_title": camp.get("role_title"), "apply_source": camp.get("apply_source"),
-              "referrer_name": camp.get("referrer_name")}
+              "referrer_name": camp.get("referrer_name"), "job_description": camp.get("job_description")}
     ai_email = ai.personalize(profile, c, camp.get("email_type"), extras, camp.get("instructions"))
     if ai_email:
         plain, html = tpl.assemble_ai(ai_email["body"], url)
