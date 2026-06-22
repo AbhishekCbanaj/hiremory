@@ -47,7 +47,8 @@ export default function About() {
               the sending pipeline, with a bias for shipping things that genuinely help people get hired.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <a href="https://www.linkedin.com/in/abhishekbanaj" target="_blank" rel="noopener noreferrer" className="btn-ghost">LinkedIn</a>
+              <a href="https://www.linkedin.com/in/abhishekbanaj/" target="_blank" rel="noopener noreferrer" className="btn-ghost">LinkedIn</a>
+              <a href="https://x.com/Abbby1206" target="_blank" rel="noopener noreferrer" className="btn-ghost">X / Twitter</a>
               <a href="https://github.com/AbhishekCbanaj" target="_blank" rel="noopener noreferrer" className="btn-ghost">GitHub</a>
             </div>
           </div>
