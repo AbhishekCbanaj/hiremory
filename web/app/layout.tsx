@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
+import { Analytics } from "@/components/Analytics";
 
 const display = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-scroll-behavior="smooth" className={`${display.variable} ${sans.variable}`}>
       <body>
+        <Analytics />
         <Nav />
         {children}
       </body>

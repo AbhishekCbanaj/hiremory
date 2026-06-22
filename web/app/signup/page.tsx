@@ -11,6 +11,19 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [resent, setResent] = useState(false);
+
+  async function resend() {
+    setLoading(true); setErr(null);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    setLoading(false);
+    if (error) { setErr(error.message); return; }
+    setResent(true);
+  }
 
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
@@ -38,10 +51,17 @@ export default function Signup() {
     return (
       <main className="container-x grid min-h-[80vh] place-items-center">
         <div className="card w-full max-w-md text-center">
-          <div className="text-3xl">✉️</div>
-          <h1 className="mt-3 text-2xl">Check your email</h1>
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-sage to-clayDark text-2xl text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_8px_22px_rgba(4,120,87,0.30)]" aria-hidden>✓</div>
+          <h1 className="mt-4 text-2xl">Check your email</h1>
           <p className="mt-3 text-ink2">We sent a confirmation link to <span className="text-ink">{email}</span>. Click it to activate your account, then log in.</p>
-          <Link href="/login" className="btn-ghost mt-6">Go to login</Link>
+          <p className="mt-2 text-[13px] text-ink2">Can&apos;t find it? Check spam, or resend below.</p>
+          <div className="mt-6 flex flex-col gap-2">
+            <button type="button" onClick={resend} disabled={loading} className="btn-ghost disabled:opacity-50">
+              {loading ? "Resending…" : resent ? "Sent again ✓" : "Resend confirmation email"}
+            </button>
+            <Link href="/login" className="btn-primary">Go to login</Link>
+          </div>
+          {err && <p className="mt-4 text-[14px] text-clay" role="alert">{err}</p>}
         </div>
       </main>
     );

@@ -133,6 +133,7 @@ export default function Settings() {
               {busy === "topup" ? "Opening…" : "Buy 500 credits"}
             </button>
           </div>
+          <a href="/billing" className="btn-ghost mt-4 text-center">Billing &amp; receipts</a>
           <p className="mt-3 text-[13px] text-ink2">
             Indian cards are billed in ₹ via Razorpay; international cards in $ via Stripe — chosen automatically.
           </p>

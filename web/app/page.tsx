@@ -4,6 +4,7 @@ import { Reveal } from "@/components/Reveal";
 import { Hero3D } from "@/components/Hero3D";
 import { Footer } from "@/components/Footer";
 import { Audience } from "@/components/Audience";
+import { Proof } from "@/components/Proof";
 
 export default function Landing() {
   return (
@@ -138,6 +139,8 @@ export default function Landing() {
       </section>
 
       <Audience />
+
+      <Proof />
 
       {/* --------------------------------------------------------------- PRICING */}
       <section id="pricing" className="border-t border-line bg-paper2 py-24">

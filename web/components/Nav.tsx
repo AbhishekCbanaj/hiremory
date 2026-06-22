@@ -60,7 +60,7 @@ export function Nav() {
             {signedIn ? (
               <Dropdown
                 label="Profile"
-                items={[{ href: "/onboarding", label: "Edit profile" }, { href: "/settings", label: "Settings" }]}
+                items={[{ href: "/onboarding", label: "Edit profile" }, { href: "/billing", label: "Billing" }, { href: "/settings", label: "Settings" }]}
                 footer={
                   <form action="/auth/signout" method="post">
                     <button type="submit" className="w-full rounded-lg px-3 py-2 text-left text-[14px] text-ink2 hover:bg-paper2 hover:text-ink">Sign out</button>
