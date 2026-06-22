@@ -1,74 +1,75 @@
 // A "logo wall" of the places our users source recruiters/HRs from — rendered as
-// real app-icon tiles (brand-accurate SVGs for the big platforms, branded
-// monograms for the job boards) scrolling behind a glass card. Honest framing:
-// Hiremory doesn't "integrate" with these — you bring the contacts, we do the
-// outreach. All marks are inline SVG/text (no external assets, crisp on retina).
+// glossy brand-colored app icons (like an iOS home screen) so the whole grid reads
+// as real logos, not placeholders. A couple of instantly-recognizable marks
+// (GitHub octocat, Google G) anchor it; the job boards use their real brand color
+// with a white monogram. Honest framing: Hiremory doesn't "integrate" with these —
+// you bring the contacts, we do the outreach. All marks are inline SVG/text.
 
-type Brand =
-  | { name: string; bg?: string; mono: string; fg: string }
-  | { name: string; svg: "linkedin" | "github" | "google" };
+type Brand = {
+  name: string;
+  bg: string;
+  mono?: string;
+  glyph?: "github" | "google";
+  light?: boolean; // true => dark mark on a light tile (for Google)
+};
 
 const BRANDS: Brand[] = [
-  { name: "LinkedIn", svg: "linkedin" },
-  { name: "Naukri", mono: "n", fg: "#1B3FAA" },
-  { name: "Indeed", mono: "i", fg: "#2164F3" },
-  { name: "Glassdoor", mono: "g", fg: "#0CAA41" },
-  { name: "Wellfound", mono: "w", fg: "#111111" },
-  { name: "GitHub", svg: "github" },
-  { name: "AngelList", mono: "a", fg: "#000000" },
-  { name: "Instahyre", mono: "ih", fg: "#3F51B5" },
-  { name: "Hirist", mono: "h", fg: "#0E8A7D" },
-  { name: "Foundit", mono: "f", fg: "#6F2DBD" },
-  { name: "Google", svg: "google" },
-  { name: "Cutshort", mono: "c", fg: "#5D5FEF" },
-  { name: "Internshala", mono: "is", fg: "#00A5EC" },
-  { name: "Shine", mono: "s", fg: "#F7941E" },
-  { name: "Monster", mono: "m", fg: "#6E46AE" },
-  { name: "TimesJobs", mono: "tj", fg: "#E03A3C" },
+  { name: "LinkedIn", bg: "#0A66C2", mono: "in" },
+  { name: "Naukri", bg: "#4A55A2", mono: "n" },
+  { name: "Indeed", bg: "#2557A7", mono: "I" },
+  { name: "Glassdoor", bg: "#0CAA41", mono: "g" },
+  { name: "Wellfound", bg: "#0E0E10", mono: "w" },
+  { name: "GitHub", bg: "#181717", glyph: "github" },
+  { name: "AngelList", bg: "#000000", mono: "a" },
+  { name: "Instahyre", bg: "#3F51B5", mono: "ih" },
+  { name: "Hirist", bg: "#13A089", mono: "h" },
+  { name: "Foundit", bg: "#7A28CC", mono: "f" },
+  { name: "Google", bg: "#FFFFFF", glyph: "google", light: true },
+  { name: "Cutshort", bg: "#5D5FEF", mono: "c" },
+  { name: "Internshala", bg: "#1294D6", mono: "is" },
+  { name: "Shine", bg: "#F7941E", mono: "s" },
+  { name: "Monster", bg: "#6E46AE", mono: "m" },
+  { name: "TimesJobs", bg: "#E03A3C", mono: "tj" },
 ];
 
-function Glyph({ b }: { b: Brand }) {
-  if ("svg" in b) {
-    if (b.svg === "linkedin")
-      return (
-        <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden>
-          <path fill="#0A66C2" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-        </svg>
-      );
-    if (b.svg === "github")
-      return (
-        <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden>
-          <path fill="#181717" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.014 2.898-.014 3.293 0 .322.216.694.825.576C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-        </svg>
-      );
+function Glyph({ b }: Readonly<{ b: Brand }>) {
+  if (b.glyph === "github")
     return (
-      <svg viewBox="0 0 48 48" className="h-7 w-7" aria-hidden>
+      <svg viewBox="0 0 24 24" className="h-8 w-8" aria-hidden>
+        <path fill="#fff" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.014 2.898-.014 3.293 0 .322.216.694.825.576C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+      </svg>
+    );
+  if (b.glyph === "google")
+    return (
+      <svg viewBox="0 0 48 48" className="h-8 w-8" aria-hidden>
         <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z" />
         <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z" />
         <path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z" />
         <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z" />
       </svg>
     );
-  }
   return (
-    <span className="text-2xl font-bold lowercase tracking-tight" style={{ color: b.fg }}>
+    <span className={`font-display font-extrabold lowercase leading-none ${b.mono && b.mono.length > 1 ? "text-lg" : "text-2xl"}`}>
       {b.mono}
     </span>
   );
 }
 
-function Tile({ b }: { b: Brand }) {
+function Tile({ b }: Readonly<{ b: Brand }>) {
   return (
     <div
       title={b.name}
-      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-line bg-white shadow-soft transition-transform duration-200 hover:-translate-y-1"
+      className="relative grid h-16 w-16 shrink-0 place-items-center rounded-[20px] text-white shadow-[0_6px_16px_rgba(17,24,19,0.16)] transition-transform duration-200 hover:-translate-y-1"
+      style={{ background: b.bg, color: b.light ? "#111813" : "#fff", border: b.light ? "1px solid #E4E9E6" : "none" }}
     >
-      <Glyph b={b} />
+      {/* glossy top highlight, like a real app icon */}
+      <span className="pointer-events-none absolute inset-0 rounded-[20px] bg-gradient-to-b from-white/30 to-transparent" />
+      <span className="relative"><Glyph b={b} /></span>
     </div>
   );
 }
 
-function Row({ items, reverse }: { items: Brand[]; reverse?: boolean }) {
+function Row({ items, reverse }: Readonly<{ items: Brand[]; reverse?: boolean }>) {
   // Tripled so the row fills the full viewport width edge-to-edge (no empty side).
   const filled = [...items, ...items, ...items];
   return (
@@ -101,9 +102,8 @@ export function Audience() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_50%,transparent,rgba(234,242,236,0.45))]" />
 
       <div className="container-x relative">
-        {/* Liquid Glass card (iOS/macOS 26 style): translucent material, heavy
-            backdrop blur + saturation so the logos show through, a specular
-            top highlight, and a soft floating shadow. */}
+        {/* Liquid Glass card (iOS/macOS 26): translucent, backdrop-blurred so the
+            logos show through, with a specular top highlight and soft float. */}
         <div className="relative mx-auto max-w-2xl overflow-hidden rounded-[28px] border border-white/60 bg-white/40 p-8 text-center ring-1 ring-black/[0.04] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_10px_50px_rgba(17,24,19,0.14),0_2px_10px_rgba(17,24,19,0.06)] md:p-12">
           <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_0%,rgba(255,255,255,0.55),transparent)]" />

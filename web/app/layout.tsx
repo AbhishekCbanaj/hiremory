@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, Hanken_Grotesk } from "next/font/google";
+import { Plus_Jakarta_Sans, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
 
-const display = Fraunces({
+const display = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
+  weight: ["600", "700", "800"],
   variable: "--font-display",
 });
 const sans = Hanken_Grotesk({

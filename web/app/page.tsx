@@ -16,7 +16,7 @@ export default function Landing() {
         <p className="eyebrow animate-rise">For job seekers who hate the spray-and-pray</p>
         <h1 className="mt-5 max-w-4xl text-5xl leading-[1.03] animate-rise md:text-7xl" style={{ animationDelay: "60ms" }}>
           Reach every recruiter with a
-          <span className="italic text-clay"> letter</span>, not a blast.
+          <span className="grad-text"> letter</span>, not a blast.
         </h1>
         <p className="mt-6 max-w-xl text-lg text-ink2 animate-rise md:text-xl" style={{ animationDelay: "140ms" }}>
           Hiremory sends each HR a personalized email, follows up when they go quiet,
@@ -169,7 +169,7 @@ export default function Landing() {
       {/* ----------------------------------------------------------------- CTA */}
       <section className="container-x py-28 text-center">
         <h2 className="mx-auto max-w-3xl text-4xl md:text-6xl">
-          Stop pasting. Start <span className="italic text-clay">hearing back</span>.
+          Stop pasting. Start <span className="grad-text">hearing back</span>.
         </h2>
         <HeroCta variant="cta" />
       </section>

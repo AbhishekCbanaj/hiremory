@@ -2,10 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --font-display: "Fraunces", Georgia, serif;
-  --font-sans: "Hanken Grotesk", system-ui, sans-serif;
-}
+/* --font-display (Plus Jakarta Sans) and --font-sans (Hanken Grotesk) are
+   provided by next/font on <html>; don't hardcode them here or they'd conflict. */
 
 html { scroll-behavior: smooth; }
 
@@ -24,9 +22,18 @@ body {
 @layer base {
   h1, h2, h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    font-weight: 800;
+    letter-spacing: -0.03em;
     line-height: 1.05;
   }
+}
+
+/* Gradient emphasis text — SproutsAI-style accent on a key word, in our brand. */
+.grad-text {
+  background: linear-gradient(100deg, #047857 0%, #0D9488 55%, #0EA5A0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 @layer components {
