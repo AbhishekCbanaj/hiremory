@@ -2,6 +2,7 @@ import Link from "next/link";
 import { HeroCta } from "@/components/HeroCta";
 import { Reveal } from "@/components/Reveal";
 import { Hero3D } from "@/components/Hero3D";
+import { Footer } from "@/components/Footer";
 
 export default function Landing() {
   return (
@@ -170,16 +171,7 @@ export default function Landing() {
         <HeroCta variant="cta" />
       </section>
 
-      <footer className="border-t border-line">
-        <div className="container-x flex flex-col items-center justify-between gap-3 py-8 text-[14px] text-ink2 md:flex-row">
-          <span className="font-display text-lg text-ink">Hiremory</span>
-          <span>Sends from your own inbox. Your data stays yours.</span>
-          <span className="flex gap-4">
-            <a href="/privacy" className="link-grow hover:text-ink">Privacy</a>
-            <span>© {new Date().getFullYear()}</span>
-          </span>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }
