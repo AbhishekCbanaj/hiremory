@@ -59,7 +59,10 @@ async function analyze(resume: string, jd: string): Promise<Record<string, unkno
       }),
     });
     const j = await r.json();
-    return JSON.parse(j?.choices?.[0]?.message?.content ?? "{}");
+    if (!r.ok) throw new Error(`AI provider error ${r.status}: ${JSON.stringify(j?.error ?? j).slice(0, 300)}`);
+    const content = j?.choices?.[0]?.message?.content;
+    if (!content) throw new Error(`AI returned no content: ${JSON.stringify(j).slice(0, 300)}`);
+    return JSON.parse(content);
   }
   if (process.env.GEMINI_API_KEY) {
     const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -73,7 +76,10 @@ async function analyze(resume: string, jd: string): Promise<Record<string, unkno
       }),
     });
     const j = await r.json();
-    return JSON.parse(j?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}");
+    if (!r.ok) throw new Error(`Gemini error ${r.status}: ${JSON.stringify(j?.error ?? j).slice(0, 300)}`);
+    const text = j?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error(`Gemini returned no content: ${JSON.stringify(j).slice(0, 300)}`);
+    return JSON.parse(text);
   }
   if (process.env.ANTHROPIC_API_KEY) {
     const resp = await new Anthropic().messages.create({

@@ -147,6 +147,7 @@ ${signature(profile)}`;
         }),
       });
       const j = await r.json();
+      if (!r.ok) throw new Error(`AI provider error ${r.status}: ${JSON.stringify(j?.error ?? j).slice(0, 300)}`);
       data = JSON.parse(j?.choices?.[0]?.message?.content ?? "{}");
     } else if (provider === "gemini") {
       const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
