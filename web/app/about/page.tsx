@@ -30,13 +30,28 @@ export default function About() {
           ))}
         </div>
 
-        <div className="mt-14 max-w-2xl">
-          <h2 className="text-2xl">Who's behind it</h2>
-          <p className="mt-3 text-ink2">
-            Hiremory is a small, early team building from Bengaluru, India. We care about craft,
-            honesty, and shipping things that actually help people get hired.
-          </p>
-          <a href="/careers" className="btn-primary mt-6">We&apos;re hiring →</a>
+        <div className="mt-16">
+          <h2 className="text-2xl">Founder</h2>
+          <div className="mt-5 card max-w-2xl">
+            <div className="flex items-center gap-4">
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-clay font-display text-2xl text-paper">AB</span>
+              <div>
+                <div className="font-display text-2xl">Abhishek Banaj</div>
+                <div className="text-ink2">Founder, Hiremory · Bengaluru, India</div>
+              </div>
+            </div>
+            <p className="mt-5 text-ink2">
+              Abhishek started Hiremory after living the job-hunt grind himself — watching good
+              applications disappear and realizing the replies came from the follow-ups almost
+              nobody sends. He builds the product end to end, from the personalization engine to
+              the sending pipeline, with a bias for shipping things that genuinely help people get hired.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a href="https://www.linkedin.com/in/abhishekbanaj" target="_blank" rel="noopener noreferrer" className="btn-ghost">LinkedIn</a>
+              <a href="https://github.com/AbhishekCbanaj" target="_blank" rel="noopener noreferrer" className="btn-ghost">GitHub</a>
+            </div>
+          </div>
+          <a href="/careers" className="btn-primary mt-8">We&apos;re hiring →</a>
         </div>
       </main>
       <Footer />
