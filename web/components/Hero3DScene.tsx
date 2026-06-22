@@ -9,17 +9,10 @@ const EMERALD_DARK = 0x047857;
 const SAGE = 0x34d399;
 const AMBER = 0xd97706;
 
-type Spec = {
-  geo: THREE.BufferGeometry;
-  color: number;
-  pos: [number, number, number];
-  scale: number;
-  wire: boolean;
-  spin: number; // rotation speed
-  phase: number; // float phase
-};
-
-// Vanilla Three.js (no react-reconciler) — works on any React/Next version.
+// Interactive Three.js centerpiece: a faceted emerald "gem" with an orbiting
+// satellite system. Drag to rotate (with inertia); when idle it auto-spins and
+// drifts toward the pointer. Vanilla three.js (no react-reconciler) so it works
+// on any React/Next version.
 export default function Hero3DScene() {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -29,51 +22,92 @@ export default function Hero3DScene() {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(0, 0, 7);
+    camera.position.set(0, 0, 6);
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     mount.appendChild(renderer.domElement);
+    renderer.domElement.style.touchAction = "pan-y"; // keep vertical page scroll on touch
+    renderer.domElement.style.cursor = "grab";
 
-    // ---- lights (physically-based units in three r16x) ----
-    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
-    const dir = new THREE.DirectionalLight(0xffffff, 2.6);
-    dir.position.set(5, 5, 5);
-    scene.add(dir);
-    const amber = new THREE.PointLight(AMBER, 55, 0, 2);
-    amber.position.set(-4, -2, 3);
-    scene.add(amber);
+    // ---- lights ----
+    scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
+    keyLight.position.set(4, 6, 5);
+    scene.add(keyLight);
+    const emeraldLight = new THREE.PointLight(SAGE, 40, 0, 2);
+    emeraldLight.position.set(4, 2, 3);
+    scene.add(emeraldLight);
+    const amberLight = new THREE.PointLight(AMBER, 35, 0, 2);
+    amberLight.position.set(-4, -3, 2);
+    scene.add(amberLight);
 
-    // ---- objects ----
+    // ---- centerpiece ----
     const group = new THREE.Group();
     scene.add(group);
-    const meshes: { mesh: THREE.Mesh; baseY: number; spec: Spec }[] = [];
 
-    const specs: Spec[] = [
-      { geo: new THREE.IcosahedronGeometry(1.4, 1), color: EMERALD, pos: [3.1, 0, 0], scale: 1, wire: false, spin: 0.12, phase: 0 },
-      { geo: new THREE.IcosahedronGeometry(1.62, 1), color: SAGE, pos: [3.1, 0, 0], scale: 1, wire: true, spin: -0.08, phase: 0 },
-      { geo: new THREE.IcosahedronGeometry(1, 0), color: EMERALD_DARK, pos: [2.6, 1.7, -1], scale: 0.5, wire: false, spin: 0.5, phase: 1.1 },
-      { geo: new THREE.OctahedronGeometry(1, 0), color: AMBER, pos: [4.0, -1.3, -1], scale: 0.55, wire: false, spin: 0.6, phase: 2.3 },
-      { geo: new THREE.DodecahedronGeometry(1, 0), color: SAGE, pos: [1.9, -1.6, 0.6], scale: 0.5, wire: true, spin: 0.45, phase: 3.0 },
-      { geo: new THREE.TorusGeometry(0.8, 0.3, 16, 40), color: EMERALD, pos: [4.4, 1.4, -0.6], scale: 0.6, wire: true, spin: 0.55, phase: 4.2 },
+    const core = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1.5, 1),
+      new THREE.MeshStandardMaterial({ color: EMERALD, flatShading: true, roughness: 0.22, metalness: 0.5 }),
+    );
+    group.add(core);
+
+    const shell = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1.92, 1),
+      new THREE.MeshStandardMaterial({ color: SAGE, wireframe: true, transparent: true, opacity: 0.5, roughness: 1 }),
+    );
+    group.add(shell);
+
+    type Sat = { mesh: THREE.Mesh; radius: number; speed: number; phase: number; tilt: number };
+    const sats: Sat[] = [];
+    const satSpecs = [
+      { geo: new THREE.OctahedronGeometry(0.32, 0), color: AMBER, radius: 2.7, speed: 0.6, phase: 0, tilt: 0.3 },
+      { geo: new THREE.DodecahedronGeometry(0.26, 0), color: EMERALD_DARK, radius: 2.9, speed: -0.45, phase: 2.0, tilt: -0.5 },
+      { geo: new THREE.TetrahedronGeometry(0.3, 0), color: SAGE, radius: 2.5, speed: 0.52, phase: 4.0, tilt: 0.7 },
+      { geo: new THREE.IcosahedronGeometry(0.22, 0), color: EMERALD, radius: 3.1, speed: -0.35, phase: 1.0, tilt: -0.2 },
     ];
-
-    for (const spec of specs) {
-      const mat = new THREE.MeshStandardMaterial({
-        color: spec.color,
-        flatShading: true,
-        wireframe: spec.wire,
-        roughness: 0.35,
-        metalness: 0.12,
-        transparent: spec.wire,
-        opacity: spec.wire ? 0.55 : 1,
-      });
-      const mesh = new THREE.Mesh(spec.geo, mat);
-      mesh.position.set(...spec.pos);
-      mesh.scale.setScalar(spec.scale);
+    for (const s of satSpecs) {
+      const mesh = new THREE.Mesh(
+        s.geo,
+        new THREE.MeshStandardMaterial({ color: s.color, flatShading: true, roughness: 0.3, metalness: 0.2 }),
+      );
       group.add(mesh);
-      meshes.push({ mesh, baseY: spec.pos[1], spec });
+      sats.push({ mesh, radius: s.radius, speed: s.speed, phase: s.phase, tilt: s.tilt });
     }
+
+    // ---- pointer interaction (drag to rotate, with inertia) ----
+    let dragging = false;
+    let lastX = 0, lastY = 0;
+    let velX = 0, velY = 0;
+    const targetTilt = { x: 0, y: 0 };
+
+    const onDown = (e: PointerEvent) => {
+      dragging = true;
+      lastX = e.clientX; lastY = e.clientY;
+      renderer.domElement.style.cursor = "grabbing";
+      renderer.domElement.setPointerCapture?.(e.pointerId);
+    };
+    const onMove = (e: PointerEvent) => {
+      const rect = mount.getBoundingClientRect();
+      targetTilt.y = ((e.clientX - rect.left) / rect.width - 0.5) * 0.5;
+      targetTilt.x = ((e.clientY - rect.top) / rect.height - 0.5) * 0.5;
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      velY = dx * 0.005;
+      velX = dy * 0.005;
+      group.rotation.y += velY;
+      group.rotation.x += velX;
+    };
+    const onUp = (e: PointerEvent) => {
+      dragging = false;
+      renderer.domElement.style.cursor = "grab";
+      renderer.domElement.releasePointerCapture?.(e.pointerId);
+    };
+    renderer.domElement.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
 
     // ---- responsive sizing ----
     function resize() {
@@ -87,7 +121,7 @@ export default function Hero3DScene() {
     const ro = new ResizeObserver(resize);
     ro.observe(mount);
 
-    // ---- animation loop, paused when offscreen or tab hidden ----
+    // ---- animation loop ----
     let raf = 0;
     let running = true;
     const start = performance.now();
@@ -96,12 +130,29 @@ export default function Hero3DScene() {
       raf = requestAnimationFrame(frame);
       if (!running) return;
       const t = (performance.now() - start) / 1000;
-      group.rotation.y = Math.sin(t * 0.15) * 0.15;
-      for (const { mesh, baseY, spec } of meshes) {
-        mesh.rotation.x += spec.spin * 0.01;
-        mesh.rotation.y += spec.spin * 0.013;
-        mesh.position.y = baseY + Math.sin(t * 1.1 + spec.phase) * 0.22;
+
+      if (!dragging) {
+        velX *= 0.94; velY *= 0.94;
+        group.rotation.y += velY + 0.0026;           // inertia + idle spin
+        group.rotation.x += velX + (targetTilt.x - group.rotation.x) * 0.02; // drift toward pointer
       }
+
+      core.rotation.x += 0.002;
+      core.rotation.y += 0.003;
+      shell.rotation.y -= 0.0016;
+      shell.rotation.x += 0.0012;
+
+      for (const s of sats) {
+        const a = t * s.speed + s.phase;
+        s.mesh.position.set(
+          Math.cos(a) * s.radius,
+          Math.sin(a) * s.radius * s.tilt,
+          Math.sin(a) * s.radius,
+        );
+        s.mesh.rotation.x += 0.02;
+        s.mesh.rotation.y += 0.025;
+      }
+
       renderer.render(scene, camera);
     }
     frame();
@@ -120,10 +171,16 @@ export default function Hero3DScene() {
       ro.disconnect();
       io.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
-      for (const { mesh } of meshes) {
-        mesh.geometry.dispose();
-        (mesh.material as THREE.Material).dispose();
-      }
+      renderer.domElement.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      scene.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (m.geometry) m.geometry.dispose();
+        const mat = m.material as THREE.Material | THREE.Material[] | undefined;
+        if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
+        else mat?.dispose();
+      });
       renderer.dispose();
       if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
     };

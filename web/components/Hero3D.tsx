@@ -19,10 +19,9 @@ function webglAvailable(): boolean {
   }
 }
 
-// Renders the 3D hero scene as a non-interactive background layer.
-// Falls back to nothing (the hero's CSS gradient wash stays visible) when the
-// user prefers reduced motion or WebGL isn't available — so it's never a blank
-// canvas or a crash.
+// Interactive 3D hero centerpiece. Fills its container; drag the gem to rotate
+// it. Falls back to a soft gradient orb when the user prefers reduced motion or
+// WebGL is unavailable — never a blank canvas or a crash.
 export function Hero3D() {
   const reduce = useReducedMotion();
   const [ready, setReady] = useState(false);
@@ -31,11 +30,20 @@ export function Hero3D() {
     setReady(webglAvailable());
   }, []);
 
-  if (reduce || !ready) return null;
+  if (reduce || !ready) {
+    return (
+      <div className="absolute inset-0 grid place-items-center" aria-hidden>
+        <div className="h-64 w-64 rounded-full bg-gradient-to-br from-sage/40 via-clay/30 to-amber/20 blur-2xl" />
+      </div>
+    );
+  }
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 opacity-90">
+    <div className="absolute inset-0">
       <Hero3DScene />
+      <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-white/60 bg-white/60 px-3 py-1 text-[12px] text-ink2 backdrop-blur">
+        Drag to rotate
+      </span>
     </div>
   );
 }

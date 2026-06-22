@@ -3,33 +3,39 @@ import { HeroCta } from "@/components/HeroCta";
 import { Reveal } from "@/components/Reveal";
 import { Hero3D } from "@/components/Hero3D";
 import { Footer } from "@/components/Footer";
-import { Audience } from "@/components/Audience";
 import { Proof } from "@/components/Proof";
 
 export default function Landing() {
   return (
     <main className="overflow-clip">
       {/* ---------------------------------------------------------------- HERO */}
-      <section className="container-x relative pt-20 pb-24 md:pt-28 md:pb-32">
-        <Hero3D />
+      <section className="container-x relative pt-16 pb-20 md:pt-24 md:pb-28">
         <div className="absolute right-[-8rem] top-10 -z-10 h-[28rem] w-[28rem] rounded-full bg-clay/10 blur-3xl animate-floaty" />
         <div className="absolute left-[-10rem] top-40 -z-10 h-[24rem] w-[24rem] rounded-full bg-amber/10 blur-3xl animate-floaty" style={{ animationDelay: "1.5s" }} />
-        <p className="eyebrow animate-rise">For job seekers who hate the spray-and-pray</p>
-        <h1 className="mt-5 max-w-4xl text-5xl leading-[1.03] animate-rise md:text-7xl" style={{ animationDelay: "60ms" }}>
-          Reach every recruiter with a
-          <span className="grad-text"> letter</span>, not a blast.
-        </h1>
-        <p className="mt-6 max-w-xl text-lg text-ink2 animate-rise md:text-xl" style={{ animationDelay: "140ms" }}>
-          Hiremory sends each HR a personalized email, follows up when they go quiet,
-          and shares your resume the moment they say yes. You write once; it works for weeks.
-        </p>
-        <div className="animate-rise" style={{ animationDelay: "220ms" }}>
-          <HeroCta />
-        </div>
-        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px] text-ink2 animate-rise" style={{ animationDelay: "300ms" }}>
-          <span className="tag">Sends from your own inbox</span>
-          <span className="tag">Warms up &amp; paces to stay out of spam</span>
-          <span className="tag">Auto follow-ups + auto-resume</span>
+        <div className="grid items-center gap-10 md:grid-cols-2">
+          <div>
+            <p className="eyebrow animate-rise">For job seekers who hate the spray-and-pray</p>
+            <h1 className="mt-5 text-5xl leading-[1.03] animate-rise md:text-6xl lg:text-7xl" style={{ animationDelay: "60ms" }}>
+              Reach every recruiter with a
+              <span className="grad-text"> letter</span>, not a blast.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-ink2 animate-rise md:text-xl" style={{ animationDelay: "140ms" }}>
+              Hiremory sends each HR a personalized email, follows up when they go quiet,
+              and shares your resume the moment they say yes. You write once; it works for weeks.
+            </p>
+            <div className="animate-rise" style={{ animationDelay: "220ms" }}>
+              <HeroCta />
+            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px] text-ink2 animate-rise" style={{ animationDelay: "300ms" }}>
+              <span className="tag">Sends from your own inbox</span>
+              <span className="tag">Warms up &amp; paces to stay out of spam</span>
+              <span className="tag">Auto follow-ups + auto-resume</span>
+            </div>
+          </div>
+          {/* interactive 3D centerpiece */}
+          <div className="relative h-[340px] animate-rise md:h-[460px]" style={{ animationDelay: "120ms" }}>
+            <Hero3D />
+          </div>
         </div>
       </section>
 
@@ -137,8 +143,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      <Audience />
 
       <Proof />
 
