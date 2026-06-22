@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -79,6 +80,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "not signed in" }, { status: 401 });
+  if (!(await rateLimit(supabase, user.id, "ai_preview"))) {
+    return NextResponse.json({ error: "Too many previews in a row — give it a minute." }, { status: 429 });
+  }
 
   const b = await request.json().catch(() => ({}));
   const etype = ["posting", "speculative", "referral"].includes(b.email_type) ? b.email_type : "posting";

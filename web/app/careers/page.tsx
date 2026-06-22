@@ -38,7 +38,7 @@ export default function Careers() {
               <h2 className="mt-4 font-display text-2xl">{r.title}</h2>
               <p className="mt-2 text-ink2">{r.blurb}</p>
               <a
-                href={`mailto:careers@hiremory.com?subject=${encodeURIComponent("Application — " + r.title)}`}
+                href={`mailto:Abhishekbanaj01@gmail.com?subject=${encodeURIComponent("Application — " + r.title)}`}
                 className="btn-ghost mt-5"
               >
                 Apply
@@ -53,8 +53,8 @@ export default function Careers() {
             We hire exceptional people ahead of openings. Tell us what you&apos;re great at and what
             you&apos;d want to build here.
           </p>
-          <a href="mailto:careers@hiremory.com?subject=General%20application" className="btn-primary mt-5">
-            Email careers@hiremory.com
+          <a href="mailto:Abhishekbanaj01@gmail.com?subject=General%20application" className="btn-primary mt-5">
+            Email Abhishekbanaj01@gmail.com
           </a>
         </div>
       </main>

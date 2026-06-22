@@ -15,10 +15,25 @@ const sans = Hanken_Grotesk({
   variable: "--font-sans",
 });
 
+const DESC =
+  "Reach every recruiter with a personalized email, follow up automatically, and send your resume the moment they say yes — all from your own inbox.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://hiremory.vercel.app"),
   title: "Hiremory — personalized job outreach on autopilot",
-  description:
-    "Reach hundreds of recruiters with a personalized email each, follow up automatically, and send your resume the moment they say yes.",
+  description: DESC,
+  openGraph: {
+    title: "Hiremory — personalized job outreach on autopilot",
+    description: DESC,
+    url: "https://hiremory.vercel.app",
+    siteName: "Hiremory",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hiremory — reach every recruiter with a letter, not a blast",
+    description: DESC,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

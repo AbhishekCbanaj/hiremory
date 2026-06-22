@@ -3,9 +3,9 @@ import { Footer } from "@/components/Footer";
 export const metadata = { title: "Contact — Hiremory" };
 
 const CHANNELS = [
-  { label: "General & support", email: "hello@hiremory.com" },
-  { label: "Careers", email: "careers@hiremory.com" },
-  { label: "Sales / teams", email: "sales@hiremory.com" },
+  { label: "General & support", email: "Abhishekbanaj01@gmail.com" },
+  { label: "Careers", email: "Abhishekbanaj01@gmail.com" },
+  { label: "Sales / teams", email: "Abhishekbanaj01@gmail.com" },
 ];
 
 export default function Contact() {
@@ -39,7 +39,7 @@ export default function Contact() {
               India
             </p>
             <p className="mt-4 text-[14px] text-ink2">Remote-first. Hours: Mon–Fri, 10:00–19:00 IST.</p>
-            <a href="mailto:hello@hiremory.com" className="btn-primary mt-6">Email us</a>
+            <a href="mailto:Abhishekbanaj01@gmail.com" className="btn-primary mt-6">Email us</a>
           </div>
         </div>
       </main>
