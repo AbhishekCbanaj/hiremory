@@ -1,27 +1,21 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-// Fields the worker reads to build every email. Kept flat + simple.
 type Profile = {
-  full_name: string;
-  phone: string;
-  linkedin_url: string;
-  github_url: string;
-  location: string;
-  headline: string;
-  intro_line: string;
-  availability: string;
-  pitch_text: string; // one bullet per line in the UI; stored as text[]
-  ai_notes: string;   // free-form memory the AI uses to personalize
-  resume_text: string; // base resume as text, for JD tailoring
+  full_name: string; phone: string; linkedin_url: string; github_url: string; location: string;
+  headline: string; intro_line: string; availability: string; pitch_text: string;
+  total_experience: string; current_salary: string; expected_salary: string;
+  notice_period: string; open_to_relocation: boolean; achievements: string;
+  resume_text: string; // filled from the parsed PDF, not shown as a textarea
 };
 
 const EMPTY: Profile = {
   full_name: "", phone: "", linkedin_url: "", github_url: "", location: "",
-  headline: "", intro_line: "", availability: "available to join immediately",
-  pitch_text: "", ai_notes: "", resume_text: "",
+  headline: "", intro_line: "", availability: "available to join immediately", pitch_text: "",
+  total_experience: "", current_salary: "", expected_salary: "", notice_period: "",
+  open_to_relocation: false, achievements: "", resume_text: "",
 };
 
 export default function Onboarding() {
@@ -29,8 +23,12 @@ export default function Onboarding() {
   const supabase = createClient();
   const [uid, setUid] = useState<string | null>(null);
   const [p, setP] = useState<Profile>(EMPTY);
+  const [parsing, setParsing] = useState(false);
+  const [parseErr, setParseErr] = useState<string | null>(null);
+  const [resumeName, setResumeName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -38,19 +36,18 @@ export default function Onboarding() {
       if (!user) { router.push("/login"); return; }
       setUid(user.id);
       const { data: row } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-      setP({
-        full_name: row?.full_name ?? user.user_metadata?.full_name ?? "",
-        phone: row?.phone ?? "",
-        linkedin_url: row?.linkedin_url ?? "",
-        github_url: row?.github_url ?? "",
-        location: row?.location ?? "",
-        headline: row?.headline ?? "",
-        intro_line: row?.intro_line ?? "",
-        availability: row?.availability ?? "available to join immediately",
-        pitch_text: (row?.pitch_points ?? []).join("\n"),
-        ai_notes: row?.ai_notes ?? "",
-        resume_text: row?.resume_text ?? "",
-      });
+      if (row) setP((prev) => ({
+        ...prev,
+        full_name: row.full_name ?? "", phone: row.phone ?? "",
+        linkedin_url: row.linkedin_url ?? "", github_url: row.github_url ?? "", location: row.location ?? "",
+        headline: row.headline ?? "", intro_line: row.intro_line ?? "",
+        availability: row.availability ?? "available to join immediately",
+        pitch_text: (row.pitch_points ?? []).join("\n"),
+        total_experience: row.total_experience ?? "", current_salary: row.current_salary ?? "",
+        expected_salary: row.expected_salary ?? "", notice_period: row.notice_period ?? "",
+        open_to_relocation: !!row.open_to_relocation, achievements: row.achievements ?? "",
+        resume_text: row.resume_text ?? "",
+      }));
     });
   }, [supabase, router]);
 
@@ -58,25 +55,55 @@ export default function Onboarding() {
     setP((prev) => ({ ...prev, [k]: v }));
   }
 
+  async function onResume(file: File) {
+    setResumeName(file.name);
+    setParsing(true); setParseErr(null); setMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/resume/parse", { method: "POST", body: fd });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error ?? "Couldn't read that resume");
+      setP((prev) => ({
+        ...prev,
+        full_name: out.full_name || prev.full_name,
+        phone: out.phone || prev.phone,
+        linkedin_url: out.linkedin_url || prev.linkedin_url,
+        github_url: out.github_url || prev.github_url,
+        headline: out.headline || prev.headline,
+        intro_line: out.intro_line || prev.intro_line,
+        total_experience: out.total_experience || prev.total_experience,
+        achievements: out.achievements || prev.achievements,
+        pitch_text: (out.pitch_points?.length ? out.pitch_points.join("\n") : prev.pitch_text),
+        resume_text: out.resume_text || prev.resume_text,
+      }));
+      setMsg("Read your resume — review below and save. Edit anything that's off.");
+    } catch (e) {
+      setParseErr(e instanceof Error ? e.message : "Parsing failed");
+    } finally {
+      setParsing(false);
+    }
+  }
+
   const pitchPoints = p.pitch_text.split("\n").map((s) => s.trim()).filter(Boolean);
-  const ready = p.full_name.trim() && p.headline.trim() && pitchPoints.length > 0;
+  const ready = !!(p.full_name.trim() && p.headline.trim());
 
   async function save() {
     if (!uid) return;
-    if (!ready) { setMsg("Error: name, headline, and at least one pitch point are required."); return; }
+    if (!ready) { setMsg("Error: name and the role you're after are required."); return; }
     setBusy(true); setMsg(null);
     const { error } = await supabase.from("profiles").update({
-      full_name: p.full_name.trim(),
-      phone: p.phone.trim() || null,
-      linkedin_url: p.linkedin_url.trim() || null,
-      github_url: p.github_url.trim() || null,
-      location: p.location.trim() || null,
-      headline: p.headline.trim(),
+      full_name: p.full_name.trim(), phone: p.phone.trim() || null,
+      linkedin_url: p.linkedin_url.trim() || null, github_url: p.github_url.trim() || null,
+      location: p.location.trim() || null, headline: p.headline.trim(),
       intro_line: p.intro_line.trim() || null,
       availability: p.availability.trim() || "available to join immediately",
-      pitch_points: pitchPoints,
-      ai_notes: p.ai_notes.trim() || null,
-      resume_text: p.resume_text.trim() || null,
+      pitch_points: pitchPoints, resume_text: p.resume_text.trim() || null,
+      total_experience: p.total_experience.trim() || null,
+      current_salary: p.current_salary.trim() || null,
+      expected_salary: p.expected_salary.trim() || null,
+      notice_period: p.notice_period.trim() || null,
+      open_to_relocation: p.open_to_relocation, achievements: p.achievements.trim() || null,
       onboarded: true,
     }).eq("id", uid);
     setBusy(false);
@@ -90,14 +117,25 @@ export default function Onboarding() {
 
   return (
     <main className="container-x py-14">
-      <p className="eyebrow">Your sender profile</p>
-      <h1 className="mt-3 text-4xl md:text-5xl">This is who recruiters meet.</h1>
+      <p className="eyebrow">Your profile</p>
+      <h1 className="mt-3 text-4xl md:text-5xl">Drop your resume. We do the rest.</h1>
       <p className="mt-4 max-w-xl text-ink2">
-        Every email the worker sends is built from this. Write it once; it
-        personalizes each message with the recipient&apos;s name and company.
+        Upload your resume and we&apos;ll fill in your details automatically — just glance over them and save.
       </p>
 
-      <div className="mt-10 grid gap-7 lg:grid-cols-2">
+      {/* upload + parse */}
+      <div className="card mt-8 max-w-3xl">
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl2 border-2 border-dashed border-line bg-paper2 px-6 py-10 text-center hover:border-clay">
+          <span className="font-display text-3xl text-clay">↑</span>
+          <span className="mt-2 text-ink">{resumeName ?? "Drop your resume PDF, or click to browse"}</span>
+          <span className="mt-1 text-[13px] text-ink2">{parsing ? "Reading your resume…" : "We auto-fill name, contact, experience & achievements"}</span>
+          <input ref={fileRef} type="file" accept=".pdf" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onResume(f); }} />
+        </label>
+        {parseErr && <p className="mt-3 text-[14px] text-clay">{parseErr} — you can still fill the fields below manually.</p>}
+      </div>
+
+      <div className="mt-7 grid gap-7 lg:grid-cols-2">
         <div className="card space-y-4">
           <h2 className="text-2xl">You</h2>
           <Field label="Full name *"><input className={input} value={p.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Abhishek Banaj" /></Field>
@@ -112,32 +150,35 @@ export default function Onboarding() {
           <Field label="Roles you're after * (used in the subject + opening)">
             <input className={input} value={p.headline} onChange={(e) => set("headline", e.target.value)} placeholder="Data / Product Analytics roles" />
           </Field>
-          <Field label="One-line intro (opening sentence)">
-            <input className={input} value={p.intro_line} onChange={(e) => set("intro_line", e.target.value)} placeholder="a Data Analyst with experience at Practo" />
+          <Field label="One-line intro">
+            <input className={input} value={p.intro_line} onChange={(e) => set("intro_line", e.target.value)} placeholder="a Data Analyst with 3 years' experience" />
           </Field>
-          <Field label="Availability">
-            <input className={input} value={p.availability} onChange={(e) => set("availability", e.target.value)} placeholder="available to join immediately" />
+          <Field label="Top achievements (one per line)">
+            <textarea rows={4} className={`${input} resize-y`} value={p.pitch_text} onChange={(e) => set("pitch_text", e.target.value)}
+              placeholder={"Cut reporting turnaround from days to under an hour\nBuilt LTV/CAC models that reshaped pricing"} />
           </Field>
-          <Field label="Proof points * (one per line, 3–5 strong bullets)">
-            <textarea rows={5} className={`${input} resize-y`} value={p.pitch_text} onChange={(e) => set("pitch_text", e.target.value)}
-              placeholder={"Cut reporting turnaround from days to under an hour\nBuilt LTV/CAC models that reshaped pricing\nFound ~₹12L/mo ad-spend leakage"} />
-          </Field>
-          <div className="text-[13px] text-ink2">{pitchPoints.length} bullet{pitchPoints.length === 1 ? "" : "s"}</div>
         </div>
       </div>
 
+      {/* job preferences */}
       <div className="card mt-7">
-        <h2 className="text-2xl">Memory <span className="text-[13px] font-normal text-ink2">(optional)</span></h2>
-        <p className="mt-1 text-ink2">Anything you want the AI to remember and weave into your emails — context, preferences, things that make you you. The more you add, the more personal each email gets.</p>
-        <textarea rows={5} className={`${input} mt-4 resize-y`} value={p.ai_notes} onChange={(e) => set("ai_notes", e.target.value)}
-          placeholder={"e.g. I'm relocating to Bangalore in March. I care about mission-driven teams. I shipped a feature used by 2M users at my last job. Prefer a warm, direct tone — no corporate fluff."} />
-      </div>
-
-      <div className="card mt-7">
-        <h2 className="text-2xl">Your resume <span className="text-[13px] font-normal text-ink2">(optional — paste as text)</span></h2>
-        <p className="mt-1 text-ink2">Paste your full resume here. When you add a job description to a campaign, the AI tailors this to match it and attaches a PDF when a recruiter says yes.</p>
-        <textarea rows={8} className={`${input} mt-4 resize-y`} value={p.resume_text} onChange={(e) => set("resume_text", e.target.value)}
-          placeholder={"Paste your resume — experience, education, skills, projects. Plain text is fine."} />
+        <h2 className="text-2xl">Job preferences</h2>
+        <p className="mt-1 text-ink2">The things recruiters always ask. All optional — fill what you&apos;re comfortable sharing.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <Field label="Total experience"><input className={input} value={p.total_experience} onChange={(e) => set("total_experience", e.target.value)} placeholder="3 years" /></Field>
+          <Field label="Notice period"><input className={input} value={p.notice_period} onChange={(e) => set("notice_period", e.target.value)} placeholder="30 days / immediate" /></Field>
+          <Field label="Current salary"><input className={input} value={p.current_salary} onChange={(e) => set("current_salary", e.target.value)} placeholder="₹ — / yr" /></Field>
+          <Field label="Expected salary"><input className={input} value={p.expected_salary} onChange={(e) => set("expected_salary", e.target.value)} placeholder="₹ — / yr" /></Field>
+        </div>
+        <label className="mt-4 flex items-center gap-3">
+          <input type="checkbox" checked={p.open_to_relocation} onChange={(e) => set("open_to_relocation", e.target.checked)}
+            className="h-5 w-5 rounded border-line text-clay focus:ring-clay" />
+          <span className="text-[15px] text-ink">Open to relocation</span>
+        </label>
+        <Field label="Other highlights (optional)">
+          <textarea rows={3} className={`${input} resize-y`} value={p.achievements} onChange={(e) => set("achievements", e.target.value)}
+            placeholder="Anything else worth surfacing — awards, certifications, notable projects." />
+        </Field>
       </div>
 
       <div className="mt-8 flex flex-wrap items-center gap-4">
