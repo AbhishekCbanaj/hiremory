@@ -40,10 +40,10 @@ export function Nav() {
   useEffect(() => { setOpen(false); }, [path]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-paper/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-white/40 bg-white/65 backdrop-blur-xl backdrop-saturate-150 shadow-[0_1px_0_rgba(255,255,255,0.6),0_8px_30px_rgba(17,24,19,0.05)]">
       <div className="container-x flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-clay text-paper font-display text-lg">H</span>
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-sage to-clayDark text-paper font-display text-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_2px_8px_rgba(4,120,87,0.35)]">H</span>
           <span className="font-display text-xl tracking-tight">Hiremory</span>
         </Link>
 
@@ -85,7 +85,7 @@ export function Nav() {
 
       {/* mobile panel */}
       {open && (
-        <nav className="max-h-[80vh] overflow-y-auto border-t border-line bg-paper px-6 py-4 md:hidden">
+        <nav className="max-h-[80vh] overflow-y-auto border-t border-white/40 bg-white/80 backdrop-blur-xl px-6 py-4 md:hidden">
           {MENUS.map((m) => (
             <div key={m.label} className="mb-3">
               <div className="px-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-ink2">{m.label}</div>
@@ -127,7 +127,7 @@ function Dropdown({ label, items, footer }: { label: string; items: Item[]; foot
         <span className="text-[10px]">▾</span>
       </button>
       <div className="invisible absolute right-0 top-full min-w-[180px] pt-2 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100">
-        <div className="rounded-xl2 border border-line bg-paper p-2 shadow-lift">
+        <div className="glass rounded-xl2 p-2">
           {items.map((l) => (
             <Link key={l.label} href={l.href} className="block rounded-lg px-3 py-2 text-[14px] text-ink2 hover:bg-paper2 hover:text-ink">{l.label}</Link>
           ))}
