@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { PDFParse } from "pdf-parse";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -111,9 +110,12 @@ export async function POST(request: Request) {
 
   let text = "";
   try {
+    // unpdf is serverless-friendly; dynamic import so any load/parse error is
+    // caught here and returned as JSON (never an HTML 500).
+    const { extractText, getDocumentProxy } = await import("unpdf");
     const buf = new Uint8Array(await file.arrayBuffer());
-    const parser = new PDFParse({ data: buf });
-    const result = await parser.getText();
+    const pdf = await getDocumentProxy(buf);
+    const result = await extractText(pdf, { mergePages: true });
     text = (result.text || "").trim().slice(0, 12000);
   } catch {
     return NextResponse.json({ error: "Couldn't read that PDF. Try a text-based (not scanned) PDF." }, { status: 422 });
