@@ -3,6 +3,7 @@ import { HeroCta } from "@/components/HeroCta";
 import { Reveal } from "@/components/Reveal";
 import { Hero3D } from "@/components/Hero3D";
 import { Footer } from "@/components/Footer";
+import { Audience } from "@/components/Audience";
 
 export default function Landing() {
   return (
@@ -135,6 +136,8 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <Audience />
 
       {/* --------------------------------------------------------------- PRICING */}
       <section id="pricing" className="border-t border-line bg-paper2 py-24">

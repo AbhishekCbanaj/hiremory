@@ -106,6 +106,17 @@ export default function Settings() {
 
       <div className="mt-10 grid gap-7 lg:grid-cols-2">
         <div className="card">
+          <h2 className="text-2xl">Account</h2>
+          <p className="mt-2 text-ink2">Manage your profile, sending mailbox, and sign-in.</p>
+          <div className="mt-5 flex flex-col gap-2">
+            <a href="/onboarding" className="btn-ghost text-center">Edit profile &amp; resume</a>
+            <a href="/mailbox" className="btn-ghost text-center">Connected mailbox</a>
+            <a href="/resume-analytics" className="btn-ghost text-center">Resume Analytics</a>
+            <a href="/forgot-password" className="btn-ghost text-center">Reset password</a>
+          </div>
+        </div>
+
+        <div className="card">
           <h2 className="text-2xl">Plan &amp; credits</h2>
           <p className="mt-2 text-ink2">
             You&apos;re on the <span className="capitalize text-ink">{plan}</span> plan

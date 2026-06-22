@@ -4,40 +4,40 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const APP_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/compose", label: "Compose" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/replies", label: "Replies" },
-  { href: "/mailbox", label: "Mailbox" },
-  { href: "/onboarding", label: "Profile" },
-  { href: "/settings", label: "Settings" },
-];
-
-const MARKETING_LINKS = [
-  { href: "/#how", label: "How it works" },
-  { href: "/#methods", label: "Two ways to send" },
-  { href: "/#pricing", label: "Pricing" },
+type Item = { href: string; label: string };
+const MENUS: { label: string; items: Item[] }[] = [
+  {
+    label: "Overview",
+    items: [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/analytics", label: "Analytics" },
+      { href: "/replies", label: "Replies" },
+    ],
+  },
+  {
+    label: "Features",
+    items: [
+      { href: "/compose", label: "Quick Paste" },
+      { href: "/compose", label: "Bulk Upload" },
+      { href: "/resume-analytics", label: "Resume Analytics" },
+      { href: "/mailbox", label: "Mailbox" },
+    ],
+  },
 ];
 
 export function Nav() {
   const path = usePathname();
-  const onApp = APP_LINKS.some((l) => path.startsWith(l.href));
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setSignedIn(!!data.user));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
-      setSignedIn(!!session?.user),
-    );
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setSignedIn(!!session?.user));
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  useEffect(() => { setOpen(false); }, [path]); // close the menu on navigation
-
-  const links = onApp ? APP_LINKS : MARKETING_LINKS;
+  useEffect(() => { setOpen(false); }, [path]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-paper/80 backdrop-blur-md">
@@ -48,34 +48,25 @@ export function Nav() {
         </Link>
 
         {/* desktop nav */}
-        {onApp ? (
-          <nav className="hidden items-center gap-1 md:flex">
-            {APP_LINKS.map((l) => (
-              <Link key={l.href} href={l.href}
-                className={`rounded-full px-4 py-2 text-[14px] transition-colors ${
-                  path.startsWith(l.href) ? "bg-ink text-paper" : "text-ink2 hover:text-ink"}`}>
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-        ) : (
-          <nav className="hidden items-center gap-7 text-[15px] text-ink2 md:flex">
-            {MARKETING_LINKS.map((l) => (
-              <a key={l.href} href={l.href} className="link-grow hover:text-ink">{l.label}</a>
-            ))}
-          </nav>
-        )}
+        <nav className="hidden items-center gap-1 md:flex">
+          {MENUS.map((m) => (
+            <Dropdown key={m.label} label={m.label} items={m.items} />
+          ))}
+          <a href="/#pricing" className="rounded-full px-4 py-2 text-[15px] text-ink2 hover:text-ink">Pricing</a>
+        </nav>
 
         <div className="flex items-center gap-3">
-          {/* desktop auth action */}
           <div className="hidden md:flex md:items-center md:gap-3">
             {signedIn ? (
-              <>
-                {!onApp && <Link href="/dashboard" className="btn-ghost !py-2 !px-5">Go to dashboard</Link>}
-                <form action="/auth/signout" method="post">
-                  <button type="submit" className="btn-ghost !py-2 !px-5">Sign out</button>
-                </form>
-              </>
+              <Dropdown
+                label="Profile"
+                items={[{ href: "/onboarding", label: "Edit profile" }, { href: "/settings", label: "Settings" }]}
+                footer={
+                  <form action="/auth/signout" method="post">
+                    <button type="submit" className="w-full rounded-lg px-3 py-2 text-left text-[14px] text-ink2 hover:bg-paper2 hover:text-ink">Sign out</button>
+                  </form>
+                }
+              />
             ) : (
               <>
                 <Link href="/login" className="btn-ghost !py-2 !px-5">Log in</Link>
@@ -84,7 +75,6 @@ export function Nav() {
             )}
           </div>
 
-          {/* mobile hamburger */}
           <button type="button" aria-label="Menu" aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
             className="grid h-10 w-10 place-items-center rounded-lg border border-line text-ink md:hidden">
@@ -95,21 +85,26 @@ export function Nav() {
 
       {/* mobile panel */}
       {open && (
-        <nav className="border-t border-line bg-paper px-6 py-4 md:hidden">
-          <div className="flex flex-col gap-1">
-            {links.map((l) => (
-              <Link key={l.href} href={l.href}
-                className={`rounded-lg px-3 py-3 text-[15px] ${
-                  onApp && path.startsWith(l.href) ? "bg-paper2 text-ink" : "text-ink2"}`}>
-                {l.label}
-              </Link>
-            ))}
-          </div>
-          <div className="mt-4 border-t border-line pt-4">
+        <nav className="max-h-[80vh] overflow-y-auto border-t border-line bg-paper px-6 py-4 md:hidden">
+          {MENUS.map((m) => (
+            <div key={m.label} className="mb-3">
+              <div className="px-3 text-[12px] font-semibold uppercase tracking-[0.18em] text-ink2">{m.label}</div>
+              <div className="mt-1 flex flex-col">
+                {m.items.map((l) => (
+                  <Link key={l.label} href={l.href} className="rounded-lg px-3 py-2.5 text-[15px] text-ink2 hover:text-ink">{l.label}</Link>
+                ))}
+              </div>
+            </div>
+          ))}
+          <a href="/#pricing" className="block rounded-lg px-3 py-2.5 text-[15px] text-ink2">Pricing</a>
+
+          <div className="mt-3 border-t border-line pt-4">
             {signedIn ? (
-              <form action="/auth/signout" method="post">
-                <button type="submit" className="btn-ghost w-full !py-3">Sign out</button>
-              </form>
+              <div className="flex flex-col gap-2">
+                <Link href="/onboarding" className="btn-ghost block w-full text-center !py-3">Edit profile</Link>
+                <Link href="/settings" className="btn-ghost block w-full text-center !py-3">Settings</Link>
+                <form action="/auth/signout" method="post"><button type="submit" className="btn-ghost w-full !py-3">Sign out</button></form>
+              </div>
             ) : (
               <div className="flex flex-col gap-2">
                 <Link href="/signup" className="btn-primary block w-full text-center !py-3">Sign up</Link>
@@ -120,5 +115,25 @@ export function Nav() {
         </nav>
       )}
     </header>
+  );
+}
+
+// Hover dropdown for desktop.
+function Dropdown({ label, items, footer }: { label: string; items: Item[]; footer?: React.ReactNode }) {
+  return (
+    <div className="group relative">
+      <button className="flex items-center gap-1 rounded-full px-4 py-2 text-[15px] text-ink2 group-hover:text-ink">
+        {label}
+        <span className="text-[10px]">▾</span>
+      </button>
+      <div className="invisible absolute right-0 top-full min-w-[180px] pt-2 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100">
+        <div className="rounded-xl2 border border-line bg-paper p-2 shadow-lift">
+          {items.map((l) => (
+            <Link key={l.label} href={l.href} className="block rounded-lg px-3 py-2 text-[14px] text-ink2 hover:bg-paper2 hover:text-ink">{l.label}</Link>
+          ))}
+          {footer && <div className="mt-1 border-t border-line pt-1">{footer}</div>}
+        </div>
+      </div>
+    </div>
   );
 }

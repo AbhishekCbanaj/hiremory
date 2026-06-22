@@ -36,10 +36,15 @@ const config: Config = {
           "0%,100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-8px)" },
         },
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         rise: "rise 0.7s cubic-bezier(0.16,1,0.3,1) both",
         floaty: "floaty 7s ease-in-out infinite",
+        marquee: "marquee 40s linear infinite",
       },
     },
   },
