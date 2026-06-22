@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HeroCta } from "@/components/HeroCta";
+import { Reveal } from "@/components/Reveal";
 
 export default function Landing() {
   return (
@@ -35,10 +36,10 @@ export default function Landing() {
             ["The honest truth", "One cold email gets ignored. The reply comes from the second touch — which nobody ever sends."],
             ["The Hiremory way", "Upload once. It personalizes, paces, follows up, tracks replies, and sends your resume on a yes."],
           ].map(([h, p], i) => (
-            <div key={h} className="animate-rise" style={{ animationDelay: `${i * 80}ms` }}>
+            <Reveal key={h} delay={i * 0.08}>
               <div className="font-display text-2xl">{h}</div>
               <p className="mt-3 text-ink2">{p}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -54,11 +55,11 @@ export default function Landing() {
             ["03", "Review the one email", "We draft a personalized, recruiter-tested email. Tweak the wording once; every send is tailored to the person and company."],
             ["04", "Let the loop close", "It drips safely, nudges non-repliers after a few days, classifies replies, and auto-sends your resume when asked."],
           ].map(([n, h, p], i) => (
-            <div key={n} className="lift bg-paper2 p-8 animate-rise md:p-10" style={{ animationDelay: `${i * 70}ms` }}>
+            <Reveal key={n} delay={i * 0.07} className="lift bg-paper2 p-8 md:p-10">
               <div className="font-display text-3xl text-clay">{n}</div>
               <h3 className="mt-3 text-2xl">{h}</h3>
               <p className="mt-2 text-ink2">{p}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -123,10 +124,10 @@ export default function Landing() {
               ["Auto-resume on a yes", "Detects “sure, send it” and replies with your role-matched resume."],
               ["Honest tracking", "Sent, replied, resume sent, bounced. Know exactly where you stand."],
             ].map(([h, p], i) => (
-              <div key={h} className="lift rounded-xl2 border border-line bg-paper2 p-6 animate-rise" style={{ animationDelay: `${i * 70}ms` }}>
+              <Reveal key={h} delay={i * 0.07} className="lift rounded-xl2 border border-line bg-paper2 p-6">
                 <h3 className="text-lg">{h}</h3>
                 <p className="mt-2 text-[15px] text-ink2">{p}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
