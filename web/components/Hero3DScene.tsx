@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 // Hiremory "Momentum" palette
 const EMERALD = 0x0b8f66;
@@ -30,6 +31,10 @@ export default function Hero3DScene() {
     renderer.domElement.style.touchAction = "pan-y"; // keep vertical page scroll on touch
     renderer.domElement.style.cursor = "grab";
 
+    // Image-based lighting so the gem has real reflections (premium glass look).
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
     // ---- lights ----
     scene.add(new THREE.AmbientLight(0xffffff, 1.1));
     const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
@@ -48,7 +53,10 @@ export default function Hero3DScene() {
 
     const core = new THREE.Mesh(
       new THREE.IcosahedronGeometry(1.5, 1),
-      new THREE.MeshStandardMaterial({ color: EMERALD, flatShading: true, roughness: 0.22, metalness: 0.5 }),
+      new THREE.MeshPhysicalMaterial({
+        color: EMERALD, flatShading: true, roughness: 0.12, metalness: 0.3,
+        clearcoat: 1, clearcoatRoughness: 0.25, envMapIntensity: 1.2, reflectivity: 0.6,
+      }),
     );
     group.add(core);
 
@@ -181,6 +189,7 @@ export default function Hero3DScene() {
         if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
         else mat?.dispose();
       });
+      pmrem.dispose();
       renderer.dispose();
       if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
     };
