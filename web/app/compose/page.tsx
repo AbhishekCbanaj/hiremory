@@ -3,9 +3,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { parseEmails, parseCsv, type Contact } from "@/lib/parse";
-import { EmailPreview } from "@/components/EmailPreview";
 
 type Mode = "quick" | "bulk";
+
+const EMAIL_TYPES: { value: string; label: string }[] = [
+  { value: "posting", label: "Applying after seeing a job posting" },
+  { value: "speculative", label: "Speculative application (no posting)" },
+  { value: "referral", label: "Referral-based application" },
+];
 
 export default function Compose() {
   const router = useRouter();
@@ -17,25 +22,20 @@ export default function Compose() {
   const [pasted, setPasted] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [resume, setResume] = useState<File | null>(null);
-  const [instructions, setInstructions] = useState("");
-  const [jd, setJd] = useState("");
-  const [tailored, setTailored] = useState<{ summary: string; sections: { heading: string; bullets: string[] }[] } | null>(null);
-  const [tailoring, setTailoring] = useState(false);
-  const [tailorErr, setTailorErr] = useState<string | null>(null);
+
+  // email type + the few extras its template needs
+  const [emailType, setEmailType] = useState("posting");
+  const [roleTitle, setRoleTitle] = useState("");
+  const [applySource, setApplySource] = useState("");
+  const [referrerName, setReferrerName] = useState("");
+
+  // read-only preview
+  const [preview, setPreview] = useState<{ subject: string; body: string } | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewErr, setPreviewErr] = useState<string | null>(null);
+
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-
-  async function previewTailored() {
-    setTailoring(true); setTailorErr(null); setTailored(null);
-    const res = await fetch("/api/resume/tailor", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job_description: jd }),
-    });
-    const out = await res.json();
-    setTailoring(false);
-    if (!res.ok) { setTailorErr(out.error ?? "Failed"); return; }
-    setTailored(out);
-  }
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -50,11 +50,33 @@ export default function Compose() {
 
   const emails = parseEmails(pasted);
 
+  async function generatePreview() {
+    setPreviewing(true); setPreviewErr(null); setPreview(null);
+    try {
+      const res = await fetch("/api/email/preview", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email_type: emailType,
+          role_title: roleTitle || null,
+          apply_source: applySource || null,
+          referrer_name: referrerName || null,
+          company: emails[0]?.company || "Acme Inc",
+        }),
+      });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error ?? "Could not generate preview");
+      setPreview({ subject: out.subject, body: out.body });
+    } catch (e) {
+      setPreviewErr(e instanceof Error ? e.message : "Preview failed");
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
   async function readFileContacts(): Promise<Contact[]> {
     if (!file) return [];
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      // Honest failure instead of silently accepting a file we never parse.
-      throw new Error("Only CSV is supported right now. Export your list as CSV, or paste emails. (PDF/Excel/Word coming soon.)");
+      throw new Error("Only CSV is supported right now. Export your list as CSV, or paste emails.");
     }
     const rows = parseCsv(await file.text());
     if (!rows.length) throw new Error("No valid emails found in that CSV.");
@@ -62,10 +84,7 @@ export default function Compose() {
   }
 
   async function save() {
-    if (!userId) {
-      router.push("/login");
-      return;
-    }
+    if (!userId) { router.push("/login"); return; }
     setBusy(true);
     setMsg(null);
     try {
@@ -73,7 +92,6 @@ export default function Compose() {
       if (mode === "quick" && emails.length === 0) throw new Error("Add at least one valid email.");
       if (mode === "bulk" && contacts.length === 0) throw new Error("Choose a CSV with at least one email.");
 
-      // 1. campaign
       const { data: camp, error: e1 } = await supabase
         .from("campaigns")
         .insert({
@@ -81,26 +99,24 @@ export default function Compose() {
           name: name || (mode === "quick" ? "Quick batch" : file?.name || "Bulk campaign"),
           mode,
           status: "draft",
-          instructions: instructions.trim() || null,
-          job_description: jd.trim() || null,
+          email_type: emailType,
+          role_title: roleTitle.trim() || null,
+          apply_source: applySource.trim() || null,
+          referrer_name: referrerName.trim() || null,
         })
         .select("id")
         .single();
       if (e1) throw e1;
 
-      // 2. contacts
       if (contacts.length) {
         const rows = contacts.map((c) => ({ ...c, user_id: userId, campaign_id: camp.id }));
         const { error: e2 } = await supabase.from("contacts").insert(rows);
         if (e2) throw e2;
       }
 
-      // 3. resume upload (optional)
       if (resume) {
         const path = `${userId}/${resume.name}`;
-        const { error: e3 } = await supabase.storage
-          .from("resumes")
-          .upload(path, resume, { upsert: true });
+        const { error: e3 } = await supabase.storage.from("resumes").upload(path, resume, { upsert: true });
         if (e3) throw e3;
         await supabase.from("resumes").insert({
           user_id: userId, label: resume.name.replace(/\.pdf$/i, ""), storage_path: path,
@@ -108,7 +124,7 @@ export default function Compose() {
       }
 
       const n = contacts.length;
-      setMsg(`Saved ${n} contact${n === 1 ? "" : "s"} to “${name || "your campaign"}”.`);
+      setMsg(`Saved ${n} contact${n === 1 ? "" : "s"} to “${name || "your campaign"}”. The worker sends them shortly.`);
       setPasted(""); setFile(null);
     } catch (err: unknown) {
       setMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
@@ -117,14 +133,19 @@ export default function Compose() {
     }
   }
 
+  const needsRole = emailType === "posting" || emailType === "referral";
+  const needsSource = emailType === "posting";
+  const needsReferrer = emailType === "referral";
+
   return (
     <main className="container-x py-14">
       <p className="eyebrow">Compose a campaign</p>
       <h1 className="mt-3 text-4xl md:text-5xl">Who should hear from you?</h1>
       <p className="mt-4 max-w-xl text-ink2">
-        Quick mode for a precise handful, bulk for a big list. Your resume is sent
-        only when a recruiter asks.
+        Pick an email type, add your recipients, and we tailor a proven template to each person and
+        company. Your resume is sent only when a recruiter asks.
       </p>
+
       {!userId && (
         <p className="mt-4 rounded-xl2 border border-clay/40 bg-clay/10 px-4 py-3 text-[14px] text-clay">
           You're not signed in. <a href="/login" className="underline">Log in</a> to save a campaign.
@@ -132,7 +153,7 @@ export default function Compose() {
       )}
       {userId && !onboarded && (
         <p className="mt-4 rounded-xl2 border border-clay/40 bg-clay/10 px-4 py-3 text-[14px] text-clay">
-          The worker won&apos;t send until your sender profile is complete.{" "}
+          The worker won&apos;t send until your profile is set.{" "}
           <a href="/onboarding" className="underline">Finish your profile →</a>
         </p>
       )}
@@ -144,6 +165,37 @@ export default function Compose() {
         className="mt-8 w-full max-w-lg rounded-xl2 border border-line bg-paper2 px-4 py-3 text-[15px] outline-none focus:border-clay"
       />
 
+      {/* email type + its extras */}
+      <div className="mt-6 card max-w-3xl">
+        <h2 className="text-2xl">Email type</h2>
+        <p className="mt-1 text-ink2">We tailor the right template to each recipient — you don&apos;t write the email.</p>
+        <select
+          value={emailType}
+          onChange={(e) => { setEmailType(e.target.value); setPreview(null); }}
+          className="mt-4 w-full max-w-md rounded-xl2 border border-line bg-paper2 px-4 py-3 text-[15px] outline-none focus:border-clay"
+        >
+          {EMAIL_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {needsRole && (
+            <input value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)}
+              placeholder="Role you're applying for (e.g. Data Analyst)"
+              className="rounded-xl2 border border-line bg-paper2 px-4 py-3 text-[15px] outline-none focus:border-clay" />
+          )}
+          {needsSource && (
+            <input value={applySource} onChange={(e) => setApplySource(e.target.value)}
+              placeholder="Where you saw it (e.g. LinkedIn, company site)"
+              className="rounded-xl2 border border-line bg-paper2 px-4 py-3 text-[15px] outline-none focus:border-clay" />
+          )}
+          {needsReferrer && (
+            <input value={referrerName} onChange={(e) => setReferrerName(e.target.value)}
+              placeholder="Who referred you (e.g. Priya Sharma)"
+              className="rounded-xl2 border border-line bg-paper2 px-4 py-3 text-[15px] outline-none focus:border-clay" />
+          )}
+        </div>
+      </div>
+
       <div className="mt-6 inline-flex rounded-full border border-line bg-paper2 p-1">
         {(["quick", "bulk"] as Mode[]).map((m) => (
           <button key={m} onClick={() => setMode(m)}
@@ -153,7 +205,7 @@ export default function Compose() {
         ))}
       </div>
 
-      <div className="mt-8 grid gap-7 lg:grid-cols-[1.4fr_1fr]">
+      <div className="mt-6 grid gap-7 lg:grid-cols-[1.4fr_1fr]">
         <div className="card">
           {mode === "quick" ? (
             <>
@@ -167,7 +219,7 @@ export default function Compose() {
           ) : (
             <>
               <h2 className="text-2xl">Upload a contact list</h2>
-              <p className="mt-1 text-ink2">CSV with an <code>email</code> column (name, company, title optional). PDF/Excel/Word coming soon.</p>
+              <p className="mt-1 text-ink2">CSV with an <code>email</code> column (name, company, title optional).</p>
               <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-xl2 border-2 border-dashed border-line bg-paper2 px-6 py-12 text-center hover:border-clay">
                 <span className="font-display text-3xl text-clay">↑</span>
                 <span className="mt-2 text-ink">{file?.name ?? "Drop a CSV or click to browse"}</span>
@@ -190,41 +242,27 @@ export default function Compose() {
         </div>
       </div>
 
-      <EmailPreview instructions={instructions} onInstructions={setInstructions}
-        sampleCompany={emails[0]?.company} />
-
-      <section className="mt-12">
-        <p className="eyebrow">Tailor your resume</p>
-        <h2 className="mt-2 text-2xl">Match your resume to the job</h2>
-        <p className="mt-1 text-ink2">Paste the job description. When a recruiter says yes, the worker tailors your resume to it and attaches a PDF. (Needs your resume in <a href="/onboarding" className="text-clay underline">Profile</a> + an AI key.)</p>
-        <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_1fr]">
-          <div className="card">
-            <textarea rows={9} className="w-full resize-y rounded-xl2 border border-line bg-paper2 px-4 py-3 text-[15px] outline-none focus:border-clay"
-              value={jd} onChange={(e) => setJd(e.target.value)} placeholder="Paste the job description here…" />
-            <button type="button" onClick={previewTailored} disabled={tailoring || !jd.trim()} className="btn-ghost mt-3">
-              {tailoring ? "Tailoring…" : "Preview tailored resume"}
-            </button>
-            {tailorErr && <p className="mt-2 text-[14px] text-clay">{tailorErr}</p>}
-          </div>
-          <div className="card">
-            {tailored ? (
-              <div className="text-[14px]">
-                <p className="text-ink2">{tailored.summary}</p>
-                {tailored.sections.map((s) => (
-                  <div key={s.heading} className="mt-3">
-                    <div className="font-display text-ink">{s.heading}</div>
-                    <ul className="mt-1 space-y-1 text-ink2">
-                      {s.bullets.map((b) => <li key={b}>• {b}</li>)}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid h-full place-items-center py-12 text-center text-ink2">
-                <p>Tailored resume preview appears here.</p>
-              </div>
-            )}
-          </div>
+      {/* read-only preview */}
+      <section className="mt-10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-2xl">Preview the email</h2>
+          <button type="button" onClick={generatePreview} disabled={previewing} className="btn-ghost disabled:opacity-50">
+            {previewing ? "Generating…" : "Generate preview"}
+          </button>
+        </div>
+        <p className="mt-1 text-ink2">A sample of what each recipient gets — tailored to them automatically. No editing needed.</p>
+        <div className="mt-4 card">
+          {previewErr && <p className="text-[14px] text-clay">{previewErr}</p>}
+          {!previewErr && !preview && (
+            <p className="py-10 text-center text-ink2">Click “Generate preview” to see your tailored email.</p>
+          )}
+          {preview && (
+            <div className="text-[15px]">
+              <div className="text-[13px] uppercase tracking-wide text-ink2">Subject</div>
+              <div className="mt-1 font-display text-xl">{preview.subject}</div>
+              <div className="mt-4 whitespace-pre-wrap leading-relaxed text-ink2">{preview.body}</div>
+            </div>
+          )}
         </div>
       </section>
 

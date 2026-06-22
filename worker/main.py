@@ -121,14 +121,14 @@ def _eligible_contacts(uid: str, profile: dict, daily_cap: int) -> list[dict]:
 
 
 def phase_send(tx, uid: str, profile: dict, mailbox_id, daily_cap: int) -> None:
-    # per-campaign AI instructions the user tuned in the preview panel.
-    # Tolerate the column not existing yet (migration 0010 not applied) — send
-    # without per-campaign tuning rather than failing the whole run.
+    # Per-campaign email settings (type + the few extras the user picked). Tolerate
+    # older schemas missing these columns — fall back to the default email type.
     try:
-        instr_map = {x["id"]: x.get("instructions") for x in
-                     supa.select("campaigns", {"user_id": f"eq.{uid}", "select": "id,instructions"})}
+        camp_map = {x["id"]: x for x in supa.select("campaigns",
+                    {"user_id": f"eq.{uid}",
+                     "select": "id,instructions,email_type,role_title,apply_source,referrer_name"})}
     except Exception:
-        instr_map = {}
+        camp_map = {}
 
     # For credit accounting: how many sends this month already happened, the plan
     # cap, and the credit pool — so we decrement credits only for sends that go
@@ -145,7 +145,7 @@ def phase_send(tx, uid: str, profile: dict, mailbox_id, daily_cap: int) -> None:
         if _sends_this_run >= MAX_SENDS:
             log("  MAX_SENDS_PER_RUN hit; stopping sends")
             break
-        status = _send_one(tx, uid, profile, c, mailbox_id, instr_map.get(c.get("campaign_id")))
+        status = _send_one(tx, uid, profile, c, mailbox_id, camp_map.get(c.get("campaign_id")))
         if status == "auth_fail":
             break  # mailbox already paused
         if status == "failed":
@@ -181,9 +181,13 @@ def _burn_credits(uid: str, topup_credits: int, month_cap: int,
         log(f"  consumed {used} top-up credit(s); {topup_credits - used} remaining")
 
 
-def _compose(profile: dict, c: dict, url: str, instructions=None) -> tuple[str, str, str]:
-    """Build (subject, plain, html). Uses Claude when available, else templates."""
-    ai_email = ai.personalize(profile, c, instructions)  # None unless ANTHROPIC_API_KEY set / on error
+def _compose(profile: dict, c: dict, url: str, camp: dict | None = None) -> tuple[str, str, str]:
+    """Build (subject, plain, html). AI tailors the campaign's chosen template; falls
+    back to the static template when no AI key is set or generation fails."""
+    camp = camp or {}
+    extras = {"role_title": camp.get("role_title"), "apply_source": camp.get("apply_source"),
+              "referrer_name": camp.get("referrer_name")}
+    ai_email = ai.personalize(profile, c, camp.get("email_type"), extras, camp.get("instructions"))
     if ai_email:
         plain, html = tpl.assemble_ai(ai_email["body"], url)
         return ai_email["subject"], plain, html
@@ -194,12 +198,12 @@ def _compose(profile: dict, c: dict, url: str, instructions=None) -> tuple[str, 
             tpl.build_email_html(profile, greeting, company, unsub_url=url))
 
 
-def _send_one(tx, uid: str, profile: dict, c: dict, mailbox_id, instructions=None) -> str:
+def _send_one(tx, uid: str, profile: dict, c: dict, mailbox_id, camp=None) -> str:
     """Send to one contact. Returns 'sent'|'dry'|'failed'|'permanent'|'auth_fail'."""
     global _sends_this_run
     company = c.get("company") or ""
     url = unsub_url(uid, c["email"])
-    subject, body, body_html = _compose(profile, c, url, instructions)
+    subject, body, body_html = _compose(profile, c, url, camp)
     headers = {"List-Unsubscribe": f"<{url}>",
                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}
 

@@ -2,42 +2,74 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 
-// Generate a preview of the outreach email using the user's profile + memory +
-// per-campaign instructions. One shared Claude model; only the CONTEXT is
-// per-user. Falls back to a plain template if no ANTHROPIC_API_KEY.
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
+export const runtime = "nodejs";
+
+// Generates a read-only preview of the outreach email: tailors the chosen
+// TEMPLATE to the user's profile/resume + the target company. Mirrors worker/ai.py.
+// Provider precedence: AI_API_KEY (Grok/OpenAI-compatible) → Gemini → Claude → template.
 
 type Profile = {
-  full_name?: string; intro_line?: string; headline?: string; location?: string;
-  availability?: string; pitch_points?: string[]; ai_notes?: string;
+  full_name?: string; intro_line?: string; headline?: string; availability?: string;
+  pitch_points?: string[]; resume_text?: string;
   phone?: string; email?: string; linkedin_url?: string; github_url?: string;
 };
+
+const TEMPLATES: Record<string, string> = {
+  posting:
+`Subject: Application for [Role] Position - [Sender Name]
+
+Dear [Recipient],
+
+I am writing to express my interest in the [Role] position at [Company], as advertised on [Source]. [One sentence on the sender's background and why they fit].
+
+[One short paragraph: a concrete, quantified achievement from the sender's experience, plus the key skills/tools relevant to the role].
+
+I have attached my resume for your review. I would appreciate the opportunity to discuss how my skills align with your needs. Thank you for considering my application.
+
+Sincerely,
+[Signature]`,
+  speculative:
+`Subject: Enquiry About Opportunities at [Company] - [Sender Name]
+
+Dear [Recipient],
+
+I hope this email finds you well. My name is [Sender Name], and I am a [profession] with [N] years of experience in [field]. I am reaching out about potential opportunities at [Company].
+
+[One short paragraph: the sender's key expertise and a concrete result, plus genuine interest in the company].
+
+I have attached my resume for your consideration. I would be grateful if you could keep me in mind for any current or future roles that fit my experience. Thank you for your time.
+
+Best regards,
+[Signature]`,
+  referral:
+`Subject: Referral by [Referrer] - Application for [Role]
+
+Dear [Recipient],
+
+I was referred to this opportunity by [Referrer], who mentioned your team is looking for a [Role]. [One sentence on the sender's relevant background and enthusiasm for [Company]].
+
+[One short paragraph: a concrete, quantified achievement and the key skills that add value].
+
+Please find my resume attached for your review. I look forward to the possibility of discussing my application. Thank you for your time and consideration.
+
+Warm regards,
+[Signature]`,
+};
+
+const SYS =
+  "You tailor a proven job-application email TEMPLATE into a real, ready-to-send email. "
+  + "Keep the template's structure, tone, and roughly its length. Fill EVERY [placeholder] using ONLY "
+  + "the sender's real details and the recipient/company given — never invent jobs, skills, numbers, "
+  + "degrees, or a referrer. If a detail is missing, write the sentence naturally without it (don't "
+  + "leave brackets, don't fabricate). GREETING: recipient's first name if given, else 'Dear Hiring Team,'. "
+  + "Pick the single most impressive quantified achievement and surface the role-relevant hard skills. "
+  + "Write like a sharp human, not a robot. No em-dashes, no unsubscribe line. End with EXACTLY the "
+  + "signature block given, verbatim. Return {subject, body} where body excludes the 'Subject:' line.";
 
 function signature(p: Profile): string {
   return [p.full_name, p.phone, p.email,
     p.linkedin_url && `LinkedIn: ${p.linkedin_url}`,
     p.github_url && `GitHub: ${p.github_url}`].filter(Boolean).join("\n");
-}
-
-function templatePreview(p: Profile, c: { first_name: string; company: string }) {
-  const bullets = (p.pitch_points ?? []).map((x) => `  • ${x}`).join("\n");
-  const subject = `Exploring ${p.headline || "relevant roles"} | ${p.full_name || ""}`.trim();
-  const body =
-`Dear ${c.first_name || "Hiring Team"},
-
-I'm ${p.full_name || ""}, ${p.intro_line || "a candidate"}, reaching out about opportunities at ${c.company || "your team"} in ${p.headline || "relevant roles"}.
-
-Over the past while I have driven measurable impact:
-
-${bullets}
-
-I am based in ${p.location || "—"} and ${p.availability || "available to join immediately"}. If there are any suitable openings, I would be glad to share my resume and project portfolio for your review.
-
-Thank you for your time. I look forward to hearing from you.
-
-Best regards,
-${signature(p)}`;
-  return { subject, body };
 }
 
 export async function POST(request: Request) {
@@ -46,60 +78,74 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "not signed in" }, { status: 401 });
 
   const b = await request.json().catch(() => ({}));
-  const c = {
-    first_name: String(b.first_name ?? "").trim() || "Hiring Team",
-    company: String(b.company ?? "").trim() || "their company",
-    title: String(b.title ?? "").trim() || "recruiter",
-  };
-  const instructions = String(b.instructions ?? "").trim();
+  const etype = ["posting", "speculative", "referral"].includes(b.email_type) ? b.email_type : "posting";
+  const company = String(b.company ?? "").trim() || "their company";
+  const firstName = String(b.first_name ?? "").trim() || "Hiring Team";
+  const roleTitle = String(b.role_title ?? "").trim();
+  const applySource = String(b.apply_source ?? "").trim();
+  const referrerName = String(b.referrer_name ?? "").trim();
 
   const { data: p } = await supabase.from("profiles")
-    .select("full_name, intro_line, headline, location, availability, pitch_points, ai_notes, phone, email, linkedin_url, github_url")
+    .select("full_name, intro_line, headline, availability, pitch_points, resume_text, phone, email, linkedin_url, github_url")
     .eq("id", user.id).maybeSingle();
   const profile: Profile = { ...(p ?? {}), email: p?.email ?? user.email ?? "" };
-
-  if (!profile.full_name || !(profile.pitch_points?.length)) {
-    return NextResponse.json({ error: "Finish your profile first (name + pitch points)." }, { status: 400 });
+  if (!profile.full_name) {
+    return NextResponse.json({ error: "Add your name in Profile first." }, { status: 400 });
   }
 
-  // Provider precedence: Gemini (free) → Claude (paid) → template (no key).
-  const provider = process.env.GEMINI_API_KEY ? "gemini"
-    : process.env.ANTHROPIC_API_KEY ? "claude" : null;
-  if (!provider) {
-    return NextResponse.json({ ...templatePreview(profile, c), source: "template" });
-  }
-
-  const sys = "You write short, human cold job-application emails to recruiters that get replies. "
-    + "GREETING: use the recipient's first name if given; otherwise 'Dear Hiring Team,'. NEVER 'Dear there'. "
-    + "OPENING: one natural sentence (correct grammar, no random Capitalization) — who the sender is and the role they want at the company. "
-    + "BULLETS: 2-3 max, each ONE short scannable line, lead with the result/number, plain language a non-technical recruiter instantly gets; avoid dense jargon. "
-    + "Naturally surface relevant hard skills/tools (SQL, Python, Power BI, Tableau) when the proof points support them. "
-    + "CLOSE: availability + soft offer to share resume. Under 150 words. End with EXACTLY the signature block given, verbatim. "
-    + "Don't invent facts. No em-dashes. No unsubscribe line.";
-  const memory = (profile.ai_notes || "").trim();
   const userMsg =
-`SENDER:
+`EMAIL TYPE: ${etype}
+
+TEMPLATE TO TAILOR (keep this structure):
+${TEMPLATES[etype]}
+
+SENDER:
 - Name: ${profile.full_name}
-- Pitch: ${profile.intro_line || ""}
-- Roles: ${profile.headline || ""}
-- Location: ${profile.location || ""}
-- Availability: ${profile.availability || "available to join immediately"}
+- Headline / roles sought: ${profile.headline || ""}
+- One-line background: ${profile.intro_line || ""}
+- Experience & skills (from resume):
+${(profile.resume_text || "").trim().slice(0, 3000)}
 - Proof points:
 ${(profile.pitch_points ?? []).map((x) => `  * ${x}`).join("\n")}
-${memory ? `- Remember about the sender:\n${memory}\n` : ""}
-RECIPIENT: ${c.first_name} · ${c.company} · ${c.title}
-${instructions ? `\nEXTRA INSTRUCTIONS (follow these):\n${instructions}\n` : ""}
+- Availability: ${profile.availability || "available to join immediately"}
+
+RECIPIENT / TARGET:
+- Name: ${firstName}
+- Company: ${company}
+- Role applying for: ${roleTitle || profile.headline || "the open role"}
+${applySource ? `- Where the posting was seen: ${applySource}\n` : ""}${referrerName ? `- Referred by: ${referrerName}\n` : ""}
 SIGNATURE (reproduce verbatim as the closing):
 ${signature(profile)}`;
 
+  const provider = process.env.AI_API_KEY ? "openai"
+    : process.env.GEMINI_API_KEY ? "gemini"
+    : process.env.ANTHROPIC_API_KEY ? "claude" : null;
+  if (!provider) return NextResponse.json({ error: "Email preview needs an AI key (Grok/OpenAI, Gemini, or Claude)." }, { status: 400 });
+
   try {
     let data: { subject?: string; body?: string } = {};
-    if (provider === "gemini") {
+    if (provider === "openai") {
+      const base = (process.env.AI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
+      const r = await fetch(`${base}/chat/completions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.AI_API_KEY}` },
+        body: JSON.stringify({
+          model: process.env.AI_MODEL || "gpt-4o-mini", max_tokens: 1200,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: SYS + ' Respond as JSON: {"subject":"...","body":"..."}' },
+            { role: "user", content: userMsg },
+          ],
+        }),
+      });
+      const j = await r.json();
+      data = JSON.parse(j?.choices?.[0]?.message?.content ?? "{}");
+    } else if (provider === "gemini") {
       const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: sys }] },
+          system_instruction: { parts: [{ text: SYS }] },
           contents: [{ role: "user", parts: [{ text: userMsg }] }],
           generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1500,
             thinkingConfig: { thinkingBudget: 0 },
@@ -110,18 +156,18 @@ ${signature(profile)}`;
       data = JSON.parse(j?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}");
     } else {
       const resp = await new Anthropic().messages.create({
-        model: MODEL, max_tokens: 1200, system: sys,
+        model: process.env.ANTHROPIC_MODEL || "claude-opus-4-8", max_tokens: 1200, system: SYS,
         output_config: { format: { type: "json_schema", schema: {
           type: "object", properties: { subject: { type: "string" }, body: { type: "string" } },
           required: ["subject", "body"], additionalProperties: false } } },
         messages: [{ role: "user", content: userMsg }],
       } as Anthropic.Messages.MessageCreateParamsNonStreaming);
-      const textBlock = resp.content.find((bk) => bk.type === "text");
-      data = JSON.parse(textBlock && "text" in textBlock ? textBlock.text : "{}");
+      const tb = resp.content.find((x) => x.type === "text");
+      data = JSON.parse(tb && "text" in tb ? tb.text : "{}");
     }
-    if (data.subject && data.body) return NextResponse.json({ ...data, source: "ai" });
-    return NextResponse.json({ ...templatePreview(profile, c), source: "template" });
-  } catch {
-    return NextResponse.json({ ...templatePreview(profile, c), source: "template" });
+    if (data.subject && data.body) return NextResponse.json({ subject: data.subject, body: data.body, source: "ai" });
+    return NextResponse.json({ error: "Could not generate — try again." }, { status: 502 });
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "preview failed" }, { status: 502 });
   }
 }
