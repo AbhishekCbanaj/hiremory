@@ -17,8 +17,8 @@ const MENUS: { label: string; items: Item[] }[] = [
   {
     label: "Features",
     items: [
-      { href: "/compose", label: "Quick Paste" },
-      { href: "/compose", label: "Bulk Upload" },
+      { href: "/compose?mode=quick", label: "Quick Paste" },
+      { href: "/compose?mode=bulk", label: "Bulk Upload" },
       { href: "/resume-analytics", label: "Resume Analytics" },
       { href: "/mailbox", label: "Mailbox" },
     ],

@@ -38,6 +38,12 @@ export default function Compose() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  // Open in the mode the user asked for (Nav "Bulk Upload" → ?mode=bulk).
+  useEffect(() => {
+    const m = new URLSearchParams(window.location.search).get("mode");
+    if (m === "bulk" || m === "quick") setMode(m);
+  }, []);
+
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       const id = data.user?.id ?? null;

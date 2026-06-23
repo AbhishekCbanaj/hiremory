@@ -85,14 +85,14 @@ export default function Landing() {
               <span className="tag">Bulk mode</span>
               <h3 className="mt-4 text-2xl">Upload a list</h3>
               <p className="mt-2 text-ink2">
-                Drop a CSV of HR contacts (PDF/Excel coming soon). Hiremory reads names,
-                emails, titles and companies, removes junk and duplicate companies, and
-                queues them for safe, paced sending over days or weeks.
+                Drop a CSV of recruiter/HR contacts (PDF/Excel coming soon). Hiremory auto-detects
+                your name, email, title and company columns, validates every address, drops
+                duplicates, then queues them for safe, paced sending.
               </p>
               <ul className="mt-5 space-y-2 text-[15px] text-ink2">
-                <li>• Auto-detects columns, validates emails</li>
-                <li>• Strips role-less inboxes (info@, hr@…) and dupes</li>
-                <li>• Never emails the same person twice</li>
+                <li>• Auto-detects columns — only an email column is required</li>
+                <li>• Validates addresses and removes duplicate emails</li>
+                <li>• Falls back to the company name from the email domain</li>
               </ul>
             </div>
             <div className="card">
