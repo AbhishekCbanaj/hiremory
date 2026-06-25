@@ -3,29 +3,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type RazorpayResp = {
-  provider: "razorpay";
-  kind: "subscription" | "topup";
-  keyId: string;
-  subscriptionId?: string;
-  orderId?: string;
-  amount?: number;
-  email?: string;
-};
-type CheckoutResp = { provider: "stripe"; url: string } | RazorpayResp | { error: string };
-
-function loadRazorpay(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.getElementById("rzp-sdk")) return resolve();
-    const s = document.createElement("script");
-    s.id = "rzp-sdk";
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Could not load Razorpay"));
-    document.body.appendChild(s);
-  });
-}
-
 export default function Settings() {
   const router = useRouter();
   const supabase = createClient();
@@ -59,29 +36,9 @@ export default function Settings() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind }),
       });
-      const data: CheckoutResp = await res.json();
-      if (!res.ok || "error" in data) throw new Error(("error" in data && data.error) || "Checkout failed");
-
-      if (data.provider === "stripe") {
-        window.location.assign(data.url);
-        return;
-      }
-      // Razorpay — open the hosted checkout modal
-      await loadRazorpay();
-      const Rzp = (window as unknown as {
-        Razorpay: new (o: Record<string, unknown>) => { open: () => void };
-      }).Razorpay;
-      const opts: Record<string, unknown> = {
-        key: data.keyId,
-        name: "Hiremory",
-        description: data.kind === "topup" ? "500 email credits" : "Hiremory Pro (monthly)",
-        prefill: { email: data.email },
-        theme: { color: "#047857" },
-        handler: () => { setMsg("Payment received — updating your account…"); setTimeout(() => location.reload(), 2500); },
-      };
-      if (data.kind === "subscription") opts.subscription_id = data.subscriptionId;
-      else { opts.order_id = data.orderId; opts.amount = data.amount; opts.currency = "INR"; }
-      new Rzp(opts).open();
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Checkout failed");
+      window.location.assign(data.url); // Stripe hosted checkout
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Checkout failed");
     } finally {
@@ -135,7 +92,7 @@ export default function Settings() {
           </div>
           <a href="/billing" className="btn-ghost mt-4 text-center">Billing &amp; receipts</a>
           <p className="mt-3 text-[13px] text-ink2">
-            Indian cards are billed in ₹ via Razorpay; international cards in $ via Stripe — chosen automatically.
+            Payments are processed securely by Stripe.
           </p>
         </div>
 

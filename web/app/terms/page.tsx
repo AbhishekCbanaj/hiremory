@@ -38,7 +38,7 @@ export default function Terms() {
           <section>
             <h2 className="text-xl text-ink">4. Billing</h2>
             <p className="mt-2">
-              Paid plans and credit packs are billed via Razorpay (India) or Stripe (international).
+              Paid plans and credit packs are billed securely via Stripe.
               Subscriptions renew until cancelled; credits are one-time. Prices may change with notice.
             </p>
           </section>

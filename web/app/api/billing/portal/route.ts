@@ -6,8 +6,6 @@ export const runtime = "nodejs";
 
 // Opens the Stripe Customer Portal for the signed-in user — Stripe-hosted, so
 // it handles cancellation, card updates, and invoice/receipt downloads natively.
-// Only relevant to Stripe (international) customers; Razorpay users cancel via
-// /api/billing/cancel.
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

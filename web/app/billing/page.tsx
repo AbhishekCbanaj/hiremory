@@ -11,23 +11,13 @@ type Payment = {
 };
 type Profile = {
   plan: string | null; plan_status: string | null; plan_renews_at: string | null;
-  email_credits: number | null; billing_provider: string | null;
-  stripe_customer_id: string | null; razorpay_subscription_id: string | null;
+  email_credits: number | null; billing_provider: string | null; stripe_customer_id: string | null;
 };
 
 function money(amount: number | null, currency: string | null) {
   if (amount == null) return "—";
   const sym = (currency || "").toLowerCase() === "inr" ? "₹" : "$";
   return `${sym}${(amount / 100).toLocaleString()}`;
-}
-function loadRazorpay(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.getElementById("rzp-sdk")) return resolve();
-    const s = document.createElement("script");
-    s.id = "rzp-sdk"; s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.onload = () => resolve(); s.onerror = () => reject(new Error("Could not load Razorpay"));
-    document.body.appendChild(s);
-  });
 }
 
 export default function Billing() {
@@ -37,14 +27,13 @@ export default function Billing() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
-  const [askCancel, setAskCancel] = useState(false);
 
   const refresh = useCallback(async () => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) { router.push("/login"); return; }
     const [{ data: p }, { data: pay }] = await Promise.all([
       supabase.from("profiles")
-        .select("plan, plan_status, plan_renews_at, email_credits, billing_provider, stripe_customer_id, razorpay_subscription_id")
+        .select("plan, plan_status, plan_renews_at, email_credits, billing_provider, stripe_customer_id")
         .eq("id", u.user.id).maybeSingle(),
       supabase.from("payments")
         .select("id, provider, kind, amount, currency, credits_added, status, created_at")
@@ -69,24 +58,13 @@ export default function Billing() {
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || "Checkout failed");
-      if (data.provider === "stripe") { window.location.assign(data.url); return; }
-      await loadRazorpay();
-      const Rzp = (window as unknown as { Razorpay: new (o: Record<string, unknown>) => { open: () => void } }).Razorpay;
-      const opts: Record<string, unknown> = {
-        key: data.keyId, name: "Hiremory",
-        description: data.kind === "topup" ? "500 email credits" : "Hiremory Pro (monthly)",
-        prefill: { email: data.email }, theme: { color: "#047857" },
-        handler: () => { setMsg("Payment received — updating your account…"); setTimeout(refresh, 2500); },
-      };
-      if (data.kind === "subscription") opts.subscription_id = data.subscriptionId;
-      else { opts.order_id = data.orderId; opts.amount = data.amount; opts.currency = "INR"; }
-      new Rzp(opts).open();
+      window.location.assign(data.url);
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Checkout failed");
-    } finally { setBusy(null); }
+      setMsg(e instanceof Error ? e.message : "Checkout failed"); setBusy(null);
+    }
   }
 
-  async function manageStripe() {
+  async function manageBilling() {
     setBusy("portal"); setMsg("");
     try {
       const res = await fetch("/api/billing/portal", { method: "POST" });
@@ -98,26 +76,12 @@ export default function Billing() {
     }
   }
 
-  async function cancelRazorpay() {
-    setBusy("cancel"); setMsg("");
-    try {
-      const res = await fetch("/api/billing/cancel", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "Could not cancel");
-      setMsg("Subscription set to cancel at the end of your billing cycle. You keep Pro until then.");
-      setAskCancel(false);
-      await refresh();
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Could not cancel");
-    } finally { setBusy(null); }
-  }
-
   const plan = profile?.plan ?? "free";
   const credits = profile?.email_credits ?? 0;
   const cap = PLAN_CAP[plan] ?? 50;
   const isPro = plan === "pro";
   const hasStripe = !!profile?.stripe_customer_id;
-  const hasRzpSub = !!profile?.razorpay_subscription_id;
+  const date = (s: string) => new Date(s).toLocaleDateString();
 
   return (
     <main className="container-x py-14">
@@ -143,7 +107,7 @@ export default function Billing() {
             </div>
           </div>
           {profile?.plan_renews_at && isPro && (
-            <p className="mt-4 text-[13px] text-ink2">Renews {new Date(profile.plan_renews_at).toLocaleDateString()}.</p>
+            <p className="mt-4 text-[13px] text-ink2">Renews {date(profile.plan_renews_at)}.</p>
           )}
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -156,30 +120,13 @@ export default function Billing() {
               {busy === "topup" ? "Opening…" : "Buy 500 credits"}
             </button>
             {hasStripe && (
-              <button onClick={manageStripe} disabled={busy !== null} className="btn-ghost disabled:opacity-50">
+              <button onClick={manageBilling} disabled={busy !== null} className="btn-ghost disabled:opacity-50">
                 {busy === "portal" ? "Opening…" : "Manage billing"}
               </button>
             )}
-            {hasRzpSub && !askCancel && (
-              <button onClick={() => setAskCancel(true)} disabled={busy !== null} className="btn-ghost disabled:opacity-50">
-                Cancel subscription
-              </button>
-            )}
           </div>
-
-          {hasRzpSub && askCancel && (
-            <div className="mt-4 rounded-xl2 border border-clay/30 bg-paper2 p-4">
-              <p className="text-[14px] text-ink2">Cancel Pro? You&apos;ll keep it until the end of your current billing cycle, then drop to Free.</p>
-              <div className="mt-3 flex gap-3">
-                <button onClick={cancelRazorpay} disabled={busy !== null} className="btn border border-clay px-5 py-2 text-clay disabled:opacity-50">
-                  {busy === "cancel" ? "Cancelling…" : "Yes, cancel"}
-                </button>
-                <button onClick={() => setAskCancel(false)} className="btn-ghost !py-2 !px-5">Keep Pro</button>
-              </div>
-            </div>
-          )}
           <p className="mt-4 text-[13px] text-ink2">
-            Indian cards are billed in ₹ via Razorpay; international cards in $ via Stripe — chosen automatically.
+            Cards are billed securely via Stripe. Cancel or update your card anytime under “Manage billing”.
           </p>
         </div>
 
@@ -200,7 +147,7 @@ export default function Billing() {
                 <tbody>
                   {payments.map((p) => (
                     <tr key={p.id} className="border-t border-line">
-                      <td className="py-3 pr-4 text-ink2">{new Date(p.created_at).toLocaleDateString()}</td>
+                      <td className="py-3 pr-4 text-ink2">{date(p.created_at)}</td>
                       <td className="py-3 pr-4 capitalize">{p.kind === "topup" ? `${p.credits_added} credits` : "Pro (monthly)"}</td>
                       <td className="py-3 pr-4 tabular-nums">{money(p.amount, p.currency)}</td>
                       <td className="py-3 capitalize text-ink2">{p.status || "paid"}</td>
@@ -212,7 +159,7 @@ export default function Billing() {
           )}
           {hasStripe && (
             <p className="mt-4 text-[13px] text-ink2">
-              Need an invoice PDF? Open <button onClick={manageStripe} className="text-clay underline">Manage billing</button>.
+              Need an invoice PDF? Open <button onClick={manageBilling} className="text-clay underline">Manage billing</button>.
             </p>
           )}
         </div>
