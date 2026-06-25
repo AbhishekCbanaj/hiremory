@@ -58,6 +58,21 @@ only.
 - **`web/` vars** → set in **Vercel → Project → Settings → Environment Variables** (Production + Preview + Development). Mirror locally in `web/.env.local` (gitignored).
 - **worker vars** → set as **GitHub Actions repo secrets** (Settings → Secrets and variables → Actions). Mirror locally in `worker/.env` (gitignored).
 
+## Admin panel (`/admin`)
+
+Founder-only dashboard (users, campaigns, sends, reply rate, revenue). Gated by
+a signed cookie; credentials come from env (never hardcoded — public repo).
+
+| Env var | Purpose | Default |
+|---------|---------|---------|
+| `ADMIN_USER` | Admin username | `admin` |
+| `ADMIN_PASSWORD` | Admin password — **required** | (unset → admin disabled) |
+| `ADMIN_SESSION_SECRET` | Cookie signing key (optional) | falls back to `MAILBOX_ENC_KEY` |
+
+Set `ADMIN_USER` + `ADMIN_PASSWORD` in **Vercel** (Production) to enable it.
+⚠️ Use a **strong** password (this exposes all user data). Never commit the real
+value — keep it in Vercel env / local `.env.local` only.
+
 ## Public contact
 - App contact / mailto links: **Hiremory@gmail.com**
 
