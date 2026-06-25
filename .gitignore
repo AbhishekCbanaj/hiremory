@@ -21,3 +21,8 @@ web/out/
 
 # ---- os ----
 .DS_Store
+.vercel
+.env*
+
+# TS incremental build cache
+*.tsbuildinfo
