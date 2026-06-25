@@ -54,7 +54,7 @@ export default function Terms() {
             <h2 className="text-xl text-ink">6. Changes & contact</h2>
             <p className="mt-2">
               We may update these terms; continued use means you accept the changes. Questions?{" "}
-              <a href="mailto:Abhishekbanaj01@gmail.com" className="text-clay underline">Abhishekbanaj01@gmail.com</a>.
+              <a href="mailto:Hiremory@gmail.com" className="text-clay underline">Hiremory@gmail.com</a>.
             </p>
           </section>
 

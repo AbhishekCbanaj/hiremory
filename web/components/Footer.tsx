@@ -62,7 +62,7 @@ export function Footer() {
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-line pt-6 text-[13px] text-ink2 md:flex-row">
           <span>© {year} Hiremory. All rights reserved.</span>
           <span className="flex items-center gap-4">
-            <a href="mailto:Abhishekbanaj01@gmail.com" className="link-grow hover:text-ink">Abhishekbanaj01@gmail.com</a>
+            <a href="mailto:Hiremory@gmail.com" className="link-grow hover:text-ink">Hiremory@gmail.com</a>
             <Link href="/privacy" className="link-grow hover:text-ink">Privacy</Link>
             <Link href="/terms" className="link-grow hover:text-ink">Terms</Link>
           </span>
